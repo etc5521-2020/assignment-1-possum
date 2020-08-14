@@ -1,0 +1,82 @@
+---
+title: "Data Exploration"
+author: "Brenwin"
+date: "14/08/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+
+# Data Exploration
+```{r}
+#types of volcanoes
+volcano %>% 
+  count(primary_volcano_type) 
+```
+- which type of volcano; erupt the most frequently?
+
+```{r}
+# which countries have the most volcanoes?
+volcano %>% 
+  count(country) %>% 
+  arrange(-n) %>% 
+  head(10)
+```
+
+```{r}
+# average elevation of volcanoes
+volcano %>% 
+  ggplot() +
+  geom_histogram(aes(x = elevation),
+                 binwidth = 500,
+                 fill = "red",
+                 colour = "black") +
+  xlim(range(volcano$elevation)) +
+  coord_flip()
+
+# by volcano types
+volcano %>% 
+  ggplot(aes(x = fct_reorder(primary_volcano_type, elevation),
+             y = elevation,
+             fill = fct_reorder(primary_volcano_type, elevation))) +
+  geom_boxplot() +
+  coord_flip() +
+  theme(legend.position = "none")
+```
+- Height of volcanoes; mostly around 1,250m - 1,750m.
+
+```{r}
+# Plot world map
+world <- map_data("world")
+
+world %>% 
+  ggplot() +
+  geom_map(map = world,
+           aes(x = long, y = lat,
+               map_id = region)) +
+  geom_point(data = volcano,
+             aes(x = longitude, y = latitude,
+                 colour = primary_volcano_type,
+                 alpha = 0.7)) +
+  theme(legend.position = "bottom")
+```
+
+- where is the ring of fire?
+
+
+
+
+
+
+
+
+
+
+

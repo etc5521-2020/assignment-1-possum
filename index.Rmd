@@ -1,10 +1,10 @@
 ---
 title: "ETC5521 Assignment 1"
 subtitle: "Your title"
-team: [FILL]
+team: Possum
 author:
-  - [FILL]
-  - [FILL]
+  - Brenwin Ang
+  - Joyce Lee
 date: "`r Sys.Date()`"
 output: 
   html_document
@@ -12,12 +12,72 @@ output:
 
 [This assignment is for ETC5521 Assignment 1 by Team `r rmarkdown::metadata$team` comprising of `r knitr::combine_words(rmarkdown::metadata$author)`.]{style="color:#006DAE;"}
 
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r load-libraries, include = FALSE}
+library(tidyverse)
+```
+
+```{r, eval = FALSE}
+# ----- cleaning script 
+library(readxl)
+library(tidyverse)
+
+eruption_list <- read_csv("2020/2020-05-12/eruption_list.csv", skip = 1) %>% 
+  janitor::clean_names() %>% 
+  select(-contains("modifier"), -contains("uncertainty"))
+
+event_list <- read_csv("2020/2020-05-12/event_list.csv", skip = 1) %>% 
+  janitor::clean_names() %>% 
+  select(-contains("modifier"), -contains("uncertainty"))
+
+volcano_list <- read_csv("2020/2020-05-12/volcano_list.csv", skip = 1) %>% 
+  janitor::clean_names()
+
+eruption_list %>% 
+  write_csv("2020/2020-05-12/eruptions.csv")
+
+event_list %>% 
+  write_csv("2020/2020-05-12/events.csv")
+
+volcano_list %>% 
+  write_csv("2020/2020-05-12/volcano.csv")
+```
+
+```{r}
+# Get the Data
+
+volcano <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv')
+eruptions <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/eruptions.csv')
+events <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/events.csv')
+tree_rings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/tree_rings.csv')
+sulfur <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/sulfur.csv')
+
+# --- Or read in with tidytuesdayR package (https://github.com/thebioengineer/tidytuesdayR)
+# PLEASE NOTE TO USE 2020 DATA YOU NEED TO USE tidytuesdayR version ? from GitHub
+
+# Either ISO-8601 date or year/week works!
+
+# Install via devtools::install_github("thebioengineer/tidytuesdayR")
+
+# tuesdata <- tidytuesdayR::tt_load('2020-05-12')
+# tuesdata <- tidytuesdayR::tt_load(2020, week = 20)
+
+# volcano <- tuesdata$volcano
+```
+
 
 # Introduction and motivation
 
 [FILL] Give the bigger picture of the data, and inspire the reader to learn more about the problem by reading your analysis. 
 
+
+
 # Data description
+
+- Data is very comprehensive 
 
 # Analysis and findings
 
