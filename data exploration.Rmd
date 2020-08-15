@@ -13,23 +13,44 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
 
+# ========== Volcano Data set
 
-# Data Exploration
+## About
+- Gives information of 958 volcanoes such as
+  - major/minor rocks// tectonic settings
+  - volcano_name// country// regions// lat// long
+  - population within 5,10,30,100km
+
+## Types of Volcanoes
 ```{r}
 #types of volcanoes
 volcano %>% 
   count(primary_volcano_type) 
 ```
-- which type of volcano; erupt the most frequently?
 
+## Categorize volcanoes into 4 main types 
 ```{r}
-# which countries have the most volcanoes?
-volcano %>% 
-  count(country) %>% 
-  arrange(-n) %>% 
-  head(10)
-```
+volcano_types <- volcano %>% 
+  # categorize volcanoes into 4 main types
+  mutate(primary_volcano_type = case_when(
+    str_detect(primary_volcano_type, "Stratovolcano") ~ "Stratovolcano",
+    str_detect(primary_volcano_type, "Shield") ~ "Shield",
+    str_detect(primary_volcano_type, "Caldera") ~ "Caldera",
+    TRUE ~ "Other"
+  ))
 
+unique(volcano_types$primary_volcano_type)
+```
+- 4 Main types of Volcanoes
+  - Shield
+  - Stratovolcano
+  - Caldera
+  - Other
+
+
+## Recategorize volcanoes' elevation
+
+### How to recategorize volcanoes' elevation? What is volcano average elevation
 ```{r}
 # average elevation of volcanoes
 volcano %>% 
@@ -42,16 +63,88 @@ volcano %>%
   coord_flip()
 
 # by volcano types
-volcano %>% 
+volcano_types %>% 
   ggplot(aes(x = fct_reorder(primary_volcano_type, elevation),
              y = elevation,
              fill = fct_reorder(primary_volcano_type, elevation))) +
   geom_boxplot() +
   coord_flip() +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  geom_point(data = volcano_types,
+             aes(x = primary_volcano_type,
+             y = elevation),
+             position = "jitter",
+             alpha = 0.4) # make points less clustered in horizontal line (overplotted)
 ```
-- Height of volcanoes; mostly around 1,250m - 1,750m.
 
+- Elevation of volcanoes; mostly around 1,250m - 1,750m.
+
+### Which volcanoes have the highest elevation?
+```{r}
+volcano_elevation <- volcano_types %>% 
+  arrange(-elevation) %>% 
+  select(volcano_name, country, primary_volcano_type, elevation) %>% 
+  # concatenate volcano_name and country
+  mutate(volcano = str_c(volcano_name, country, sep = " -"),
+         # keep unused variable i.e. volcano type 
+         .keep = "unused") %>% 
+  # rearrange column in data frame
+  .[,c(3, 1, 2)] 
+```
+
+
+## which countries have the most volcanoes?
+```{r}
+volcano %>% 
+  count(country) %>% 
+  arrange(-n) %>% 
+  head(10)
+```
+
+
+# ========== Eruption Data set
+
+One row in the eruptions data set represents a case of volcano eruption
+
+## What is the date range of this data set?
+```{r}
+eruptions %>% 
+  summarize(range(start_year, na.rm = TRUE))
+```
+- This data set dates back all the way to -11,345 years ago to the present.
+  - dubbed the Holocene period. i.e. time since the end of the last "ice age" 
+
+## How many times each volcano erupted? *note: `volcano_erupted` data set include only volcanoes that erupted
+```{r}
+# join only volcanoes that erupted
+volcano_erupted <-inner_join(volcano_types, eruptions) %>%
+  select(volcano_name, vei, start_year, end_year, last_eruption_year, primary_volcano_type, country, latitude, longitude, elevation, evidence_category, population_within_5_km, population_within_10_km, population_within_30_km, population_within_100_km) %>% 
+# concatenate country & volcano name
+  mutate(volcano = str_c(volcano_name, country, sep = " -"), .keep = "unused") 
+
+# summarize volcano erupted; keeping all columns
+volcano_erupted <- volcano_erupted %>% 
+  group_by(volcano) %>%
+  # find count (i.e. no. of times volcano erupted)
+  mutate(n = n()) %>%  
+  distinct(volcano, 
+           .keep_all = TRUE) %>% 
+  ungroup()
+```
+
+- There were total of 11,1178 eruptions during this year. (roughly about 1 per year!!!)
+  - Eruptions are caused by 688 volcanoes
+
+### what; mean & median of number of volcano eruptions per volcano?
+```{r}
+volcano_erupted %>% 
+  summarise(median = median(n),
+            mean = mean(n))
+```
+- should probably cut down the time frame 
+
+
+# ========== World map
 ```{r}
 # Plot world map
 world <- map_data("world")
@@ -61,19 +154,45 @@ world %>%
   geom_map(map = world,
            aes(x = long, y = lat,
                map_id = region)) +
-  geom_point(data = volcano,
+  geom_point(data = volcano_types,
              aes(x = longitude, y = latitude,
                  colour = primary_volcano_type,
-                 alpha = 0.7)) +
+                 alpha = 0.7,
+                 size = elevation)) +
   theme(legend.position = "bottom")
 ```
 
 - where is the ring of fire?
+- edit elevation sequence  
+
+### Plot a world map of where volcanoes erupt
+```{r}
+world %>% 
+  ggplot() +
+  geom_map(map = world,
+           aes(x = long, y = lat,
+               map_id = region)) +
+  geom_point(data = volcano_erupted,
+             aes(x = longitude, y = latitude,
+                 colour = primary_volcano_type,
+                 alpha = 0.7,
+                 size = n)) +
+  theme(legend.position = "bottom")
+```
 
 
+# ========== events data set
 
+## when; started documenting events?
+```{r}
+range(events$event_date_year, na.rm = TRUE)
+```
+- since 9650 years ago.
 
-
+## What sort of events were documented?
+```{r}
+unique(events$event_type)
+```
 
 
 

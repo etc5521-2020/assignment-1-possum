@@ -46,7 +46,7 @@ volcano_list %>%
   write_csv("2020/2020-05-12/volcano.csv")
 ```
 
-```{r}
+```{r getting-data}
 # Get the Data
 
 volcano <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv')
@@ -74,10 +74,29 @@ sulfur <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tid
 [FILL] Give the bigger picture of the data, and inspire the reader to learn more about the problem by reading your analysis. 
 
 
-
+ 
 # Data description
 
-- Data is very comprehensive 
+The data source is from [The Smithsonian Institution](https://volcano.si.edu/). The data is supplied and cleaned, downloadable from [tidytuesday github](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-05-12/readme.md).
+
+This Volcano data set is probably the most comprehensive data set around. They contain 5 linked data sets:  
+
+- `volcano`: Provides information on 958 volcanoes such as
+  - its metadata: volcano name, type, country location, evidence category, longitude and latitude
+  - technical details: major & minor rocks, tectonic settings
+  - distance from nearest population (km)
+  
+- `eruptions`: Details eruptions occured since Holecene (dubbed time since the end of "ice age") period (11,345 years ago) to present. Details include  
+  - VEI (volcano explosivity index), date of eruption, eruption category/type, evidence method
+
+- `events`: any event that occur at the volcanoes documented.
+  - such as explosion, dome/cone formation, fatalities, evacuation, loud audible noises among others.
+
+- `tree_ring`: Tree rings were used as a climate proxy. In study of effects on volcanoes on climate change, researchers matched effects of eruptions to tree ring records. 
+
+
+- `sulfur`
+  - Provide information on sulphur detected from 500.CE to 706.CE
 
 # Analysis and findings
 
