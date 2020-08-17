@@ -18,7 +18,7 @@ output:
 [FILL] Give the bigger picture of the data, and inspire the reader to learn more about the problem by reading your analysis. 
 
 # Data description
-
+The data source is from The Smithsonian Institution (volcano.si.edu), which has been constantly updating since 2013. The data was made available for download on (https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-05-12/readme.md), so that we directly import the 5 data sets for this analysis. 
 # Analysis and findings
 
 [FILL] Should include at least one plot or numerical summary for each of your questions, that helps the reader arrive at an answer. You should also write paragraphs describing the methods, summaries and findings. 
