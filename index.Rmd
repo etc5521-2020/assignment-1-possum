@@ -94,7 +94,6 @@ This Volcano data set is probably the most comprehensive data set around. They c
 
 - `tree_ring`: Tree rings were used as a climate proxy. In study of effects on volcanoes on climate change, researchers matched effects of eruptions to tree ring records. 
 
-
 - `sulfur`
   - Provide information on sulphur detected from 500.CE to 706.CE
 

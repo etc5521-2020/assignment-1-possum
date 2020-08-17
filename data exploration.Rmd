@@ -90,6 +90,9 @@ volcano_elevation <- volcano_types %>%
          .keep = "unused") %>% 
   # rearrange column in data frame
   .[,c(3, 1, 2)] 
+
+volcano_elevation
+
 ```
 
 
@@ -130,6 +133,7 @@ volcano_erupted <- volcano_erupted %>%
   distinct(volcano, 
            .keep_all = TRUE) %>% 
   ungroup()
+
 ```
 
 - There were total of 11,1178 eruptions during this year. (roughly about 1 per year!!!)
@@ -142,6 +146,43 @@ volcano_erupted %>%
             mean = mean(n))
 ```
 - should probably cut down the time frame 
+
+## How worried should you be about volcano eruptions?
+
+- Explositivity of volcanoes; measured through VEI (volcano explositivity index)
+  - theoretically: scale 0 to infinity
+  - largest VEI measured: 8
+  - most reason VEI 7 observed is in 1815: The eruption of Mount Tambora
+
+```{r}
+unique(eruptions$evidence_method_dating)
+
+eruptions %>% 
+  count(evidence_method_dating)
+
+# filter eruptions; to after 1812: eruption of Mount Tambora
+eruptions_1812 <- eruptions %>% 
+  filter(start_year >= 1812) 
+
+# see lag; between last eruption to next
+eruptions_1812 <- eruptions_1812 %>% 
+  arrange(start_year, volcano_name) %>%  
+  group_by(volcano_name) %>% 
+  # find year between eruptions = start of erution + (time between last and start of eruption)
+  mutate(lag_year = start_year + (lag(start_year) - start_year))
+
+# Plot volcano against lag year
+eruptions_1812 %>% 
+  # filter volcanoes; with only 1 eruption i.e. NA for lag_year variable
+  filter(!is.na(lag_year)) %>% 
+  ggplot() +
+  geom_point(aes(x = volcano_name,
+                 y = lag_year)) +
+  coord_flip() +
+  # facet by VEI
+  facet_wrap(~vei)
+  
+```
 
 
 # ========== World map
