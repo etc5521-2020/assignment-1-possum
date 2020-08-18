@@ -18,7 +18,11 @@ output:
 [FILL] Give the bigger picture of the data, and inspire the reader to learn more about the problem by reading your analysis. 
 
 # Data description
-The data source is from The Smithsonian Institution (volcano.si.edu), which has been constantly updating since 2013. The data was made available for download on (https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-05-12/readme.md), so that we directly import the 5 data sets for this analysis. 
+The data source is from The Smithsonian Institution (volcano.si.edu), which has been constantly updating since 2013. The data was made available for download on (https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-05-12/readme.md), so that we directly import the 5 data sets for this analysis. These 5 data sets are volcano, eruptions, events, tree_rings and sulfur, allowing us to discover the influences among them. 
+
+- `volcano` data set consists of 26 variables, encompassing the location, geological and population information of the 958 volcanoes recorded. For variables "last_eruption_year", "major_rock" and "minor_rock", some cells are labelled as "unknown" or leave as blank for cases where data is unknown or unrecorded. 
+
+- `eruptions` data set 
 # Analysis and findings
 
 [FILL] Should include at least one plot or numerical summary for each of your questions, that helps the reader arrive at an answer. You should also write paragraphs describing the methods, summaries and findings. 
