@@ -22,7 +22,13 @@ The data source is from The Smithsonian Institution (volcano.si.edu), which has 
 
 - `volcano` data set consists of 26 variables, encompassing the location, geological and population information of the 958 volcanoes recorded. For variables "last_eruption_year", "major_rock" and "minor_rock", some cells are labelled as "unknown" or leave as blank for cases where data is unknown or unrecorded. 
 
-- `eruptions` data set 
+- `eruptions` data set comprises of 15 variables, which mainly notes down the exact occurrence of each eruption since Holecene. Further, the severity of eruptions is represented by variable, "vei (Volcano Explosivity Index)" in ascending order, taking values from 0 to 7. Unknown data appears commonly among variables "area_of_activity", "start_month", "start_day", "end_year", "end_month" and "end_day", denoted with "NA".
+
+- `events` data set contains 10 variables, recording the occurrence details of 41322 events of volcanoes. Despite variables such as "event_type" and "event_remark" , a lot of its variables (e.g. eruption dates) overlap with that of `eruptions`, thus it seems as a condensed version of `eruptions`. "NA" are presented regularly for "event_remarks" and mostly event dates information.
+
+- `tree_rings` data set includes 3 variables which acts as an effective measurement for temperature, meanwhile enabling researchers to confirm climate change as an impact of volcanoes eruptions. The measurements are conducted yearly and no data is missing.
+
+- `sulfur` data set also contains 3 variables, recording the amount of sulfur detected as an effect due to volcanoes eruptions. Using the same unit for measurement, the data for "neem" is collected from Greenland while it is from Anatartica for "wdc".
 # Analysis and findings
 
 [FILL] Should include at least one plot or numerical summary for each of your questions, that helps the reader arrive at an answer. You should also write paragraphs describing the methods, summaries and findings. 
