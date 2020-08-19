@@ -183,7 +183,7 @@ eruptions_1812 %>%
   facet_wrap(~vei)
   
 ```
-
+### How far are
 
 # ========== World map
 ```{r}
@@ -220,6 +220,53 @@ world %>%
                  size = n)) +
   theme(legend.position = "bottom")
 ```
+
+### Plot world map of countries fill with highest no. of volcanoes
+```{r}
+# clean volcano$country to match world data set
+volcano_country <- volcano %>% 
+  mutate(country = case_when(
+    country == "Armenia-Azerbaijan" ~ "Armenia",
+    country == "Burma (Myanmar)" ~ "Burma",
+    country %in% c("Chile-Argentina","Chile-Bolivia", "Chile-Peru") ~ "Chile",
+    country == "China-North Korea" ~ "China",
+    country == "Colombia-Ecuador" ~ "Colombia",
+    country %in% c("DR Congo", "DR Congo-Rwanda") ~ "Democratic Republic of the Congo",
+    country == "El Salvador-Guatemala" ~ "El Salvador",
+    country == "Eritrea-Djibouti" ~ "Eritrea",
+    country %in% c("Ethiopia-Djibouti", "Ethiopia-Kenya") ~ "Ethiopia",
+    country == "Guatemala-El Salvador" ~ "Guatemala",
+    country == "Japan - administered by Russia" ~ "Japan",
+    country == "Mexico-Guatemala" ~ "Mexico",
+    country == "North Korea-South Korea" ~ "North Korea",
+    country == "Saint Kitts and Nevis" ~ "Saint Kitts",
+    country == "Syria-Jordan-Saudi Arabia" ~ "Syria",
+    country == "Saint Vincent and the Grenadines" ~ "Saint Vincent",
+    country == "Uganda-Rwanda" ~ "Uganda",
+    country == "United Kingdom" ~ "UK",
+    country == "United States" ~ "USA",
+    TRUE ~ country
+  )) 
+
+volcano_country_count <- volcano_country %>% 
+  group_by(country) %>% 
+  count() 
+
+volcano_country_join <- left_join(world, volcano_country_count,
+          by = c("region" = "country")) %>% 
+  # replace n = NA to 0
+  mutate(n = ifelse(is.na(n), 0, n))
+  
+
+world %>% 
+  ggplot() +
+  geom_map(map = volcano_country_join,
+           aes(x = long, y = lat,
+               map_id = region)) 
+           
+
+```
+
 
 
 # ========== events data set
