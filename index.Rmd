@@ -1,10 +1,10 @@
 ---
 title: "ETC5521 Assignment 1"
 subtitle: "Your title"
-team: [FILL]
+team: Possum
 author:
-  - [FILL]
-  - [FILL]
+  - Brenwin Ang
+  - Joyce Lee
 date: "`r Sys.Date()`"
 output: 
   html_document
@@ -12,23 +12,110 @@ output:
 
 [This assignment is for ETC5521 Assignment 1 by Team `r rmarkdown::metadata$team` comprising of `r knitr::combine_words(rmarkdown::metadata$author)`.]{style="color:#006DAE;"}
 
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r load-libraries, include = FALSE}
+library(tidyverse)
+```
+
+```{r, eval = FALSE}
+# ----- cleaning script 
+library(readxl)
+library(tidyverse)
+
+eruption_list <- read_csv("2020/2020-05-12/eruption_list.csv", skip = 1) %>% 
+  janitor::clean_names() %>% 
+  select(-contains("modifier"), -contains("uncertainty"))
+
+event_list <- read_csv("2020/2020-05-12/event_list.csv", skip = 1) %>% 
+  janitor::clean_names() %>% 
+  select(-contains("modifier"), -contains("uncertainty"))
+
+volcano_list <- read_csv("2020/2020-05-12/volcano_list.csv", skip = 1) %>% 
+  janitor::clean_names()
+
+eruption_list %>% 
+  write_csv("2020/2020-05-12/eruptions.csv")
+
+event_list %>% 
+  write_csv("2020/2020-05-12/events.csv")
+
+volcano_list %>% 
+  write_csv("2020/2020-05-12/volcano.csv")
+```
+
+```{r getting-data}
+# Get the Data
+
+volcano <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv')
+eruptions <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/eruptions.csv')
+events <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/events.csv')
+tree_rings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/tree_rings.csv')
+sulfur <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/sulfur.csv')
+
+# --- Or read in with tidytuesdayR package (https://github.com/thebioengineer/tidytuesdayR)
+# PLEASE NOTE TO USE 2020 DATA YOU NEED TO USE tidytuesdayR version ? from GitHub
+
+# Either ISO-8601 date or year/week works!
+
+# Install via devtools::install_github("thebioengineer/tidytuesdayR")
+
+# tuesdata <- tidytuesdayR::tt_load('2020-05-12')
+# tuesdata <- tidytuesdayR::tt_load(2020, week = 20)
+
+# volcano <- tuesdata$volcano
+```
+
 
 # Introduction and motivation
 
 [FILL] Give the bigger picture of the data, and inspire the reader to learn more about the problem by reading your analysis. 
 
+
+ 
 # Data description
 The data source is from The Smithsonian Institution (volcano.si.edu), which has been constantly updating since 2013. The data was made available for download on (https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-05-12/readme.md), so that we directly import the 5 data sets for this analysis. These 5 data sets are volcano, eruptions, events, tree_rings and sulfur, allowing us to discover the influences among them. 
 
+The data source is from [The Smithsonian Institution](https://volcano.si.edu/). The data is supplied and cleaned, downloadable from [tidytuesday github](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-05-12/readme.md).
+
+This Volcano data set is probably the most comprehensive data set around. They contain 5 linked data sets, each with looking at a particular:  
+
+- `volcano`: Provides information on 958 volcanoes such as
+  - its metadata: volcano name, type, country location, evidence category, longitude and latitude
+  - technical details: major & minor rocks, tectonic settings
+  - distance from nearest population (km)
+
 - `volcano` data set consists of 26 variables, encompassing the location, geological and population information of the 958 volcanoes recorded. For variables "last_eruption_year", "major_rock" and "minor_rock", some cells are labelled as "unknown" or leave as blank for cases where data is unknown or unrecorded. 
+
+
+- `eruptions`: Details eruptions occured since Holecene (dubbed time since the end of "ice age") period (11,345 years ago) to present. Details include  
+  - VEI (volcano explosivity index), date of eruption, eruption category/type, evidence method
 
 - `eruptions` data set comprises of 15 variables, which mainly notes down the exact occurrence of each eruption since Holecene. Further, the severity of eruptions is represented by variable, "vei (Volcano Explosivity Index)" in ascending order, taking values from 0 to 7. Unknown data appears commonly among variables "area_of_activity", "start_month", "start_day", "end_year", "end_month" and "end_day", denoted with "NA".
 
+- `events`: any event that occur at the volcanoes documented.
+  - such as explosion, dome/cone formation, fatalities, evacuation, loud audible noises among others.
+
 - `events` data set contains 10 variables, recording the occurrence details of 41322 events of volcanoes. Despite variables such as "event_type" and "event_remark" , a lot of its variables (e.g. eruption dates) overlap with that of `eruptions`, thus it seems as a condensed version of `eruptions`. "NA" are presented regularly for "event_remarks" and mostly event dates information.
+
+- `tree_ring`: Tree rings were used as a climate proxy. In study of effects on volcanoes on climate change, researchers matched effects of eruptions to tree ring records. 
 
 - `tree_rings` data set includes 3 variables which acts as an effective measurement for temperature, meanwhile enabling researchers to confirm climate change as an impact of volcanoes eruptions. The measurements are conducted yearly and no data is missing.
 
+- `sulfur`
+  - Provide information on sulphur detected from 500.CE to 706.CE
+
+
 - `sulfur` data set also contains 3 variables, recording the amount of sulfur detected as an effect due to volcanoes eruptions. Using the same unit for measurement, the data for "neem" is collected from Greenland while it is from Anatartica for "wdc".
+
+
+
+
+
+
+
 # Analysis and findings
 
 [FILL] Should include at least one plot or numerical summary for each of your questions, that helps the reader arrive at an answer. You should also write paragraphs describing the methods, summaries and findings. 
