@@ -12,6 +12,60 @@ output:
 
 [This assignment is for ETC5521 Assignment 1 by Team `r rmarkdown::metadata$team` comprising of `r knitr::combine_words(rmarkdown::metadata$author)`.]{style="color:#006DAE;"}
 
+```{r, eval = FALSE}
+# ----- cleaning script 
+library(readxl)
+library(tidyverse)
+library(lubridate)
+library(broom)
+library(leaflet)
+library(ggmap)
+library(mapview)
+library(viridis)
+library(rgdal)
+
+eruption_list <- read_csv("2020/2020-05-12/eruption_list.csv", skip = 1) %>% 
+  janitor::clean_names() %>% 
+  select(-contains("modifier"), -contains("uncertainty"))
+
+event_list <- read_csv("2020/2020-05-12/event_list.csv", skip = 1) %>% 
+  janitor::clean_names() %>% 
+  select(-contains("modifier"), -contains("uncertainty"))
+
+volcano_list <- read_csv("2020/2020-05-12/volcano_list.csv", skip = 1) %>% 
+  janitor::clean_names()
+
+eruption_list %>% 
+  write_csv("2020/2020-05-12/eruptions.csv")
+
+event_list %>% 
+  write_csv("2020/2020-05-12/events.csv")
+
+volcano_list %>% 
+  write_csv("2020/2020-05-12/volcano.csv")
+```
+
+```{r getting-data}
+# Get the Data
+
+volcano <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv')
+eruptions <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/eruptions.csv')
+events <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/events.csv')
+tree_rings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/tree_rings.csv')
+sulfur <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/sulfur.csv')
+
+# --- Or read in with tidytuesdayR package (https://github.com/thebioengineer/tidytuesdayR)
+# PLEASE NOTE TO USE 2020 DATA YOU NEED TO USE tidytuesdayR version ? from GitHub
+
+# Either ISO-8601 date or year/week works!
+
+# Install via devtools::install_github("thebioengineer/tidytuesdayR")
+
+# tuesdata <- tidytuesdayR::tt_load('2020-05-12')
+# tuesdata <- tidytuesdayR::tt_load(2020, week = 20)
+
+# volcano <- tuesdata$volcano
+```
 
 # Introduction and motivation
 
@@ -32,5 +86,65 @@ The data source is from The Smithsonian Institution (volcano.si.edu), which has 
 # Analysis and findings
 
 [FILL] Should include at least one plot or numerical summary for each of your questions, that helps the reader arrive at an answer. You should also write paragraphs describing the methods, summaries and findings. 
+
+```{r}
+vei_du <- eruptions %>%
+  na.exclude(vei, start_year, start_month, start_day, end_year, end_month, end_day) %>%
+  select(everything()) %>%
+  mutate(start = make_date(start_year, start_month, start_day)) %>%
+  mutate(end = make_date(end_year, end_month, end_day)) %>%
+  mutate(duration = as.numeric(end - start)) %>%
+  na.exclude(duration) %>%
+  arrange(vei)
+
+vei_du %>%
+  group_by(vei) %>%
+  summarise(mean(duration))
+
+a1 <- tapply(vei_du$duration, vei_du$vei, summary)
+list2DF(a1)
+
+ggplot(vei_du, aes(x = as.factor(vei), y = duration, color = vei)) +
+  geom_boxplot() +
+  coord_flip() +
+  labs(title = "Five number summary distribtuion for VEI level from 0 to 6",
+       x = "VEI",
+       y = "Eruption duration (Days)")
+
+vei_du %>%
+  select(vei, duration) %>%
+  lm(vei ~ ., data = .)
+
+a2 <- vei_du %>%
+  select(duration, vei) %>%
+  lm(duration ~ ., data = .)
+
+tidy(a2)
+```
+
+```{r}
+a3 <- vei_du %>%
+  filter(duration > 365) %>%
+  count(volcano_number, volcano_name, latitude, longitude) %>%
+  distinct(volcano_number, volcano_name, latitude, longitude, n) %>%
+  arrange(desc(n))
+
+make_bbox(lon = a3$longitude, 
+                a3$latitude, f = 0.9) 
+
+a3_locations = leaflet(data = a3) %>%
+  addProviderTiles(providers$Esri.WorldImagery, group="Satellite") %>%
+  addCircles(
+    lng = a3$longitude, 
+    lat = a3$latitude, 
+    group = a3$n,
+    radius = 10, 
+    fill=TRUE, color="yellow",
+    weight= 10,
+    stroke = FALSE, fillOpacity = 0.8,
+    label = a3$volcano_name)
+a3_locations
+```
+
 
 # References
