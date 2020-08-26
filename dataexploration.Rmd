@@ -272,15 +272,19 @@ world %>%
 ### Plot a world map of where volcanoes erupt
 
 ```{r}
-rof_longfixed <- rof %>% 
-  mutate(longfixed = case_when(lon < 0 ~ "neg_long",
-                               lon > 0 ~ "pst_long"))
+# convert to sf object & split into 2 polygons (to prevent across dateline)
+plates <- map(.x = plate$plate,
+    .f = function(x){
+      st_polygon(x = list(as.matrix(rof %>% filter(plate == x) %>%  select(lon, lat)))) %>% 
+  st_wrap_dateline()
+    }) 
 
-rof_neg_long <- rof_longfixed %>% 
-  filter(longfixed == "neg_long")
-
-rof_pst_long <- rof_longfixed %>% 
-  filter(longfixed == "pst_long")
+# convert polygons back to dataframe
+plates2 <- lapply(seq_along(plates), 
+                 function(i) as.data.frame(plates[[i]][[1]]) %>% 
+                   mutate(group = i)) %>%
+  data.table::rbindlist() %>% 
+  rename(lon = V1, lat = V2)
 ```
 
 ```{r}
@@ -299,14 +303,15 @@ world %>%
   geom_point(data = volcano_erupted,
              aes(x = longitude, y = latitude,
                  colour = "red",
-                 size = n)) +
+                 size = 1.5)) +
   theme(legend.position = "bottom") +
-  geom_polygon(data = rof,
+  geom_polygon(data = plates2,
                aes(x = lon,
                    y = lat,
-                   group = plate),
+                   group = group),
                fill = NA,
-               colour = "dark green") +
+               colour = "dark green",
+               size = 1.5) +
   # add continent text
   geom_text(data = continent_coord,
             aes(x = long, 
@@ -319,7 +324,27 @@ world %>%
          size = FALSE,
          alpha = FALSE)
 ```
-`
+
+```{r}
+plate <- unique(rof$plate) %>% 
+  tibble(plate = .)
+
+plate.sf <- st_polygon(x = list(as.matrix(rof %>% filter(plate == "KE") %>%  select(lon, lat)))) %>% 
+  st_wrap_dateline()
+
+plate.sf1 <- st_polygon(x = list(as.matrix(rof %>% filter(plate == "an") %>%  select(lon, lat)))) %>% 
+  st_wrap_dateline()
+
+plate.sf <- st_polygon(x = list(as.matrix(rof %>% filter(plate == "AP") %>%  select(lon, lat)))) %>% 
+  st_wrap_dateline()
+
+world %>% 
+  ggplot() +
+  geom_map(map = world,
+           aes(x = long, y = lat, map_id = region)) +
+  geom_sf(data = plate.sf,
+          colour = "dark green")
+```
 
 
 ### Plot world map of countries fill with highest no. of volcanoes
