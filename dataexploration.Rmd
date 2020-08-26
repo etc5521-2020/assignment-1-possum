@@ -25,8 +25,20 @@ rof <- read_csv("all.csv")
 
 - Secondary:
   How worried should you be about a volcano eruption?
-  Which tectonic settings have higher or lower VEI and how this relates to the duration of eruption?
-  What is the ideal setting for a volcano to form?
+--> generally most volcanoes that erupt are not near populations  
+--> high VEI eruptions; don't occur frequently
+
+Which tectonic settings have higher or lower VEI and how this relates to the duration of eruption?
+--> most erupting volcanoes (regardless of duration) share a common tectonic setting
+
+*which tectonic settings have higher/lower VEI?
+
+What is the ideal setting for a volcano to form?
+--> most of the volcanoes that erupt lie on ring of fire  
+-> which are not situated near populations
+
+--> order of VEI isn't that significant in explaining duration or frequency of eruption
+
 
 
 # ========== Volcano Data set
@@ -162,26 +174,29 @@ volcano_erupted <- volcano_erupted %>%
   - Eruptions are caused by 688 volcanoes
 
 ### what; mean & median of number of volcano eruptions per volcano?
+
+#### All time
 ```{r}
 volcano_erupted %>% 
   summarise(median = median(n),
             mean = mean(n))
 ```
-- should probably cut down the time frame 
 
 ## How worried should you be about volcano eruptions?
 
 - Explositivity of volcanoes; measured through VEI (volcano explositivity index)
   - theoretically: scale 0 to infinity
   - largest VEI measured: 8
-  - most reason VEI 7 observed is in 1815: The eruption of Mount Tambora
-
+  - most recent VEI 7 eruption was observed is in 1815: The eruption at Mount Tambora
+    
 ```{r}
 unique(eruptions$evidence_method_dating)
 
 eruptions %>% 
   count(evidence_method_dating)
+```
 
+```{r}
 # filter eruptions; to after 1812: eruption of Mount Tambora
 eruptions_1812 <- eruptions %>% 
   filter(start_year >= 1812) 
@@ -190,22 +205,45 @@ eruptions_1812 <- eruptions %>%
 eruptions_1812 <- eruptions_1812 %>% 
   arrange(start_year, volcano_name) %>%  
   group_by(volcano_name) %>% 
-  # find year between eruptions = start of erution + (time between last and start of eruption)
+  # find year between eruptions = year of eruption + (time between last and start of eruption)
   mutate(lag_year = start_year + (lag(start_year) - start_year))
 
-# Plot volcano against lag year
+# Plot all volcanoes that erupted more than once
 eruptions_1812 %>% 
   # filter volcanoes; with only 1 eruption i.e. NA for lag_year variable
   filter(!is.na(lag_year)) %>% 
   ggplot() +
-  geom_point(aes(x = volcano_name,
-                 y = lag_year)) +
+  geom_tile(aes(x = volcano_name,
+                 y = lag_year),
+            size = 3,
+            colour = "red") +
   coord_flip() +
   # facet by VEI
   facet_wrap(~vei)
-  
 ```
-### How far are
+
+## probability distribution function of volcano eruptions in each VEI
+```{r}
+library(ggridges)
+eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
+  group_by(volcano_name, vei) %>% 
+  mutate(no_of_eruptions = n(),
+         vei = as.factor(vei)) %>%
+  ggplot() +
+  stat_density_ridges(aes(y = vei,
+                          x = no_of_eruptions,
+                          fill = vei),
+                      quantile_lines = TRUE,
+                      quantiles = 0.5,
+                      alpha = 0.7,
+                      jittered_points = TRUE,
+                      position = "points_jitter") +
+  scale_x_continuous(breaks = seq(from = 0, to = 70, by = 5 ))
+```
+- The probability of an eruption of VEI 5 and above is actually very rare
+
+
 
 # ========== World map
 ```{r}
@@ -222,7 +260,8 @@ world %>%
                  colour = primary_volcano_type,
                  alpha = 0.7,
                  size = elevation)) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") 
+
 
 
 ```
@@ -231,7 +270,27 @@ world %>%
 - edit elevation sequence  
 
 ### Plot a world map of where volcanoes erupt
+
 ```{r}
+rof_longfixed <- rof %>% 
+  mutate(longfixed = case_when(lon < 0 ~ "neg_long",
+                               lon > 0 ~ "pst_long"))
+
+rof_neg_long <- rof_longfixed %>% 
+  filter(longfixed == "neg_long")
+
+rof_pst_long <- rof_longfixed %>% 
+  filter(longfixed == "pst_long")
+```
+
+```{r}
+# add continent coordinates
+continent_coord <- tibble(id = c("Africa", "Asia", "Europe", "North America", "Oceania", "South America"),
+                          long = c(15, 80, 20, -100, 150, -60),
+                          lat = c(15, 35, 50, 40, -25, -15),
+                          stringsAsFactors = F)
+
+# ----- plot world map
 world %>% 
   ggplot() +
   geom_map(map = world,
@@ -239,21 +298,28 @@ world %>%
                map_id = region)) +
   geom_point(data = volcano_erupted,
              aes(x = longitude, y = latitude,
-                 colour = primary_volcano_type,
-                 alpha = 0.7,
+                 colour = "red",
                  size = n)) +
   theme(legend.position = "bottom") +
-  geom_polygon(data = filter(rof, plate == "KE"),
+  geom_polygon(data = rof,
                aes(x = lon,
                    y = lat,
                    group = plate),
                fill = NA,
-               colour = "red") 
-
-world <- world %>% 
-  mutate(longfixed = case_when(long < 180 ~ 360 + long,
-                               TRUE ~ long))
+               colour = "dark green") +
+  # add continent text
+  geom_text(data = continent_coord,
+            aes(x = long, 
+                y = lat,
+                label = id),
+            colour = "blue",
+            size = 5) +
+  # remove legends
+  guides(colour = FALSE,
+         size = FALSE,
+         alpha = FALSE)
 ```
+`
 
 
 ### Plot world map of countries fill with highest no. of volcanoes
