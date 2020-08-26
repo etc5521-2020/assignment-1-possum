@@ -140,6 +140,12 @@ atect3 <- ajoin3 %>%
   count(tectonic_settings) %>%
   mutate(Percentage = n/sum(n)*100)
 
+atect3 %>% 
+  filter(!is.na(tectonic_settings)) %>%
+  ggplot() + 
+  geom_col(aes(x = tectonic_settings, y = n)) +
+  coord_flip()
+
 apop3 <- ajoin3 %>%
   head(.,10) %>%
   distinct(volcano_name, population_within_5_km, population_within_10_km, population_within_30_km)
@@ -163,6 +169,12 @@ atect4 <- ajoin4 %>%
   select(volcano_number, volcano_name, vei, tectonic_settings) %>%
   count(tectonic_settings) %>%
   mutate(Percentage = n/sum(n)*100)
+
+atect4 %>% 
+  filter(!is.na(tectonic_settings)) %>%
+  ggplot() + 
+  geom_col(aes(x = tectonic_settings, y = n)) +
+  coord_flip() 
 
 a5 <- rbind(a3, a4)
 make_bbox(lon = a5$longitude, 
@@ -207,7 +219,7 @@ btect0 <- bjoin0 %>%
   mutate(Percentage = n/sum(n)*100)
 
  pal1 <- colorFactor(
-  palette = c('dark red', 'red', 'orange', 'yellow'),
+  palette = c('yellow', 'orange', 'red', 'dark red'),
   domain = b0$vei
 )
 
@@ -235,8 +247,28 @@ bjoin0 <- b0 %>%
 
 btect0 <- bjoin0 %>%
   select(volcano_number, volcano_name, tectonic_settings) %>%
+  group_by(tectonic_settings) %>%
   count(tectonic_settings) %>%
+  ungroup() %>%
   mutate(Percentage = n/sum(n)*100)
+
+btect0 %>% 
+  filter(!is.na(tectonic_settings)) %>%
+  ggplot() + 
+  geom_col(aes(x = tectonic_settings, y = n)) +
+  coord_flip() 
 ```
+
+```{r}
+hl_tect <- eruptions %>%
+  na.exclude(vei) %>%
+  left_join(volcano) %>%
+  na.exclude(tectonic_settings) %>%
+  select(tectonic_settings, vei) %>%
+  group_by(tectonic_settings) %>%
+  summarise(`Avg vei` = mean(vei)) 
+hl_tect
+```
+
 
 # References
