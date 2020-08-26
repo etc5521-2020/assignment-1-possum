@@ -122,7 +122,7 @@ a2 <- vei_du %>%
 tidy(a2)
 ```
 
-```{r}
+```{r duration}
 a3 <- vei_du %>%
   filter(duration > 365) %>%
   count(volcano_number, volcano_name, latitude, longitude, vei) %>%
@@ -131,6 +131,22 @@ a3 <- vei_du %>%
   mutate(`Duration category` = print("Long")) %>%
   mutate(`Avg VEI` = mean(vei))
 
+ajoin3 <- a3 %>%
+  select(volcano_number, volcano_number, vei, `Avg VEI`, `Duration category`) %>%
+  left_join(volcano) 
+
+atect3 <- ajoin3 %>%
+  select(volcano_number, volcano_name, vei, tectonic_settings) %>%
+  count(tectonic_settings) %>%
+  mutate(Percentage = n/sum(n)*100)
+
+apop3 <- ajoin3 %>%
+  head(.,10) %>%
+  distinct(volcano_name, population_within_5_km, population_within_10_km, population_within_30_km)
+
+ggplot(apop3) +
+  geom_point(aes(x = volcano_name, y = population_within_5_km))
+
 a4 <- vei_du %>%
   filter(duration < 30) %>%
   count(volcano_number, volcano_name, latitude, longitude, vei) %>%
@@ -138,6 +154,15 @@ a4 <- vei_du %>%
   arrange(desc(n)) %>%
   mutate(`Duration category` = print("Short")) %>%
   mutate(`Avg VEI` = mean(vei))
+
+ajoin4 <- a4 %>%
+  select(volcano_number, volcano_number, vei, `Avg VEI`, `Duration category`) %>%
+  left_join(volcano) 
+
+atect4 <- ajoin4 %>%
+  select(volcano_number, volcano_name, vei, tectonic_settings) %>%
+  count(tectonic_settings) %>%
+  mutate(Percentage = n/sum(n)*100)
 
 a5 <- rbind(a3, a4)
 make_bbox(lon = a5$longitude, 
@@ -162,8 +187,56 @@ a5_locations = leaflet(data = a5) %>%
 a5_locations
 ```
 
-```{r}
+```{r frequency}
+b0 <- eruptions %>%
+  na.exclude(vei, start_year) %>%
+  group_by(start_year) %>%
+  select(volcano_number, volcano_name, vei, latitude, longitude, start_year) %>%
+  count(volcano_number, volcano_name, vei, latitude, longitude) %>%
+  arrange(desc(n)) %>%
+  mutate(`Total eruption` = sum(b0$n)) 
 
+bjoin0 <- b0 %>%
+  select(volcano_number, volcano_number, vei, `Total eruption`) %>%
+  left_join(volcano) 
+
+btect0 <- bjoin0 %>%
+  select(volcano_number, volcano_name, vei, tectonic_settings) %>%
+  ungroup(start_year) %>%
+  count(tectonic_settings) %>%
+  mutate(Percentage = n/sum(n)*100)
+
+ pal1 <- colorFactor(
+  palette = c('dark red', 'red', 'orange', 'yellow'),
+  domain = b0$vei
+)
+
+b0_locations = leaflet(data = b0) %>%
+  addProviderTiles(providers$Esri.WorldImagery, group="Satellite") %>%
+  addCircles(
+    lng = b0$longitude, 
+    lat = b0$latitude, 
+    group = b0$`Duration category`,
+    radius = 10,
+    fill=TRUE, color= ~pal1(vei),
+    weight= 10,
+    stroke = FALSE, fillOpacity = 0.8,
+    label = b0$volcano_name)
+b0_locations 
+ 
+head(b0, 5)
+
+# erupt twice or more within a year
+bjoin0 <- b0 %>%
+  filter(n >= 2) %>%
+  ungroup(start_year) %>%
+  distinct(volcano_number, volcano_name) %>%
+  left_join(volcano)
+
+btect0 <- bjoin0 %>%
+  select(volcano_number, volcano_name, tectonic_settings) %>%
+  count(tectonic_settings) %>%
+  mutate(Percentage = n/sum(n)*100)
 ```
 
 # References
