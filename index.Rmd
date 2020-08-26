@@ -125,26 +125,45 @@ tidy(a2)
 ```{r}
 a3 <- vei_du %>%
   filter(duration > 365) %>%
-  count(volcano_number, volcano_name, latitude, longitude) %>%
-  distinct(volcano_number, volcano_name, latitude, longitude, n) %>%
-  arrange(desc(n))
+  count(volcano_number, volcano_name, latitude, longitude, vei) %>%
+  distinct(volcano_number, volcano_name, latitude, longitude, n, vei) %>%
+  arrange(desc(n)) %>%
+  mutate(`Duration category` = print("Long")) %>%
+  mutate(`Avg VEI` = mean(vei))
 
-make_bbox(lon = a3$longitude, 
-                a3$latitude, f = 0.9) 
+a4 <- vei_du %>%
+  filter(duration < 30) %>%
+  count(volcano_number, volcano_name, latitude, longitude, vei) %>%
+  distinct(volcano_number, volcano_name, latitude, longitude, n, vei) %>%
+  arrange(desc(n)) %>%
+  mutate(`Duration category` = print("Short")) %>%
+  mutate(`Avg VEI` = mean(vei))
 
-a3_locations = leaflet(data = a3) %>%
+a5 <- rbind(a3, a4)
+make_bbox(lon = a5$longitude, 
+                a5$latitude, f = 0.9) 
+
+pal <- colorFactor(
+  palette = c('red', 'yellow'),
+  domain = a5$`Duration category`
+)
+
+a5_locations = leaflet(data = a5) %>%
   addProviderTiles(providers$Esri.WorldImagery, group="Satellite") %>%
   addCircles(
-    lng = a3$longitude, 
-    lat = a3$latitude, 
-    group = a3$n,
-    radius = 10, 
-    fill=TRUE, color="yellow",
+    lng = a5$longitude, 
+    lat = a5$latitude, 
+    group = a5$`Duration category`,
+    radius = 10,
+    fill=TRUE, color= ~pal(`Duration category`),
     weight= 10,
     stroke = FALSE, fillOpacity = 0.8,
-    label = a3$volcano_name)
-a3_locations
+    label = a5$volcano_name)
+a5_locations
 ```
 
+```{r}
+
+```
 
 # References
