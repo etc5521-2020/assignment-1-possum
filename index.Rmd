@@ -266,7 +266,8 @@ hl_tect <- eruptions %>%
   na.exclude(tectonic_settings) %>%
   select(tectonic_settings, vei) %>%
   group_by(tectonic_settings) %>%
-  summarise(`Avg vei` = mean(vei)) 
+  summarise(`Avg vei` = mean(vei)) %>%
+  arrange(desc(`Avg vei`))
 hl_tect
 ```
 
