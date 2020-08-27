@@ -23,6 +23,7 @@ library(ggmap)
 library(mapview)
 library(viridis)
 library(rgdal)
+library(kableExtra)
 
 eruption_list <- read_csv("2020/2020-05-12/eruption_list.csv", skip = 1) %>% 
   janitor::clean_names() %>% 
@@ -100,13 +101,16 @@ vei_du <- eruptions %>%
 vei_du %>%
   group_by(vei) %>%
   summarise(mean(duration))
-
+# keep
 a1 <- tapply(vei_du$duration, vei_du$vei, summary)
-list2DF(a1)
-
-ggplot(vei_du, aes(x = as.factor(vei), y = duration, color = vei)) +
+a5num1 <- list2DF(a1) %>%
+  mutate(`VEI` = print(c("Min", "Q1", "Median", "Mean", "Q3", "Max"))) 
+a5num1k <- kable(a5num1, caption = "Five number summary and mean of duration for each VEI")
+# keep
+abox <- ggplot(vei_du, aes(x = as.factor(vei), y = duration, color = vei)) +
   geom_boxplot() +
   coord_flip() +
+  scale_y_continuous(limits=c(-100,10000), breaks=seq(0,10000,5000), expand = c(0, 0)) +
   labs(title = "Five number summary distribtuion for VEI level from 0 to 6",
        x = "VEI",
        y = "Eruption duration (Days)")
@@ -114,14 +118,18 @@ ggplot(vei_du, aes(x = as.factor(vei), y = duration, color = vei)) +
 vei_du %>%
   select(vei, duration) %>%
   lm(vei ~ ., data = .)
-
+# keep, but trim outliers
 a2 <- vei_du %>%
   select(duration, vei) %>%
   lm(duration ~ ., data = .)
 
-tidy(a2)
+alm <- ggplot(vei_du, aes(x = vei, y = duration)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Linear model of VEI against eruption duration")
+glance(a2) 
 ```
-
+FIGURE summarises the distribution of eruption duration measured in days for each VEI level from 0 to 6.
 ```{r duration}
 a3 <- vei_du %>%
   filter(duration > 365) %>%
@@ -135,23 +143,19 @@ ajoin3 <- a3 %>%
   select(volcano_number, volcano_number, vei, `Avg VEI`, `Duration category`) %>%
   left_join(volcano) 
 
-atect3 <- ajoin3 %>%
-  select(volcano_number, volcano_name, vei, tectonic_settings) %>%
-  count(tectonic_settings) %>%
-  mutate(Percentage = n/sum(n)*100)
-
-atect3 %>% 
+  atect3 <- ajoin3 %>%
+    select(volcano_number, volcano_name, vei, tectonic_settings) %>%
+    count(tectonic_settings) %>%
+    mutate(Percentage = n/sum(n)*100)
+# keep
+altectplot <- atect3 %>% 
   filter(!is.na(tectonic_settings)) %>%
   ggplot() + 
-  geom_col(aes(x = tectonic_settings, y = n)) +
-  coord_flip()
-
-apop3 <- ajoin3 %>%
-  head(.,10) %>%
-  distinct(volcano_name, population_within_5_km, population_within_10_km, population_within_30_km)
-
-ggplot(apop3) +
-  geom_point(aes(x = volcano_name, y = population_within_5_km))
+  geom_col(aes(x = reorder(tectonic_settings, n), y = n), fill = "red") +
+  coord_flip() +
+  labs(x = "Tectonic settings",
+       y = "Count",
+       title = "Tectonic settings with high duration ( >365 days) eruptions")
 
 a4 <- vei_du %>%
   filter(duration < 30) %>%
@@ -169,13 +173,16 @@ atect4 <- ajoin4 %>%
   select(volcano_number, volcano_name, vei, tectonic_settings) %>%
   count(tectonic_settings) %>%
   mutate(Percentage = n/sum(n)*100)
-
-atect4 %>% 
+# keep
+astectplot <- atect4 %>% 
   filter(!is.na(tectonic_settings)) %>%
   ggplot() + 
-  geom_col(aes(x = tectonic_settings, y = n)) +
-  coord_flip() 
-
+  geom_col(aes(x = reorder(tectonic_settings, n), y = n), fill = "yellow") +
+  coord_flip() +
+   labs(x = "Tectonic settings",
+       y = "Count",
+       title = "Tectonic settings with short duration ( ≤30 days) eruptions")
+# keep
 a5 <- rbind(a3, a4)
 make_bbox(lon = a5$longitude, 
                 a5$latitude, f = 0.9) 
@@ -195,7 +202,10 @@ a5_locations = leaflet(data = a5) %>%
     fill=TRUE, color= ~pal(`Duration category`),
     weight= 10,
     stroke = FALSE, fillOpacity = 0.8,
-    label = a5$volcano_name)
+    label = a5$volcano_name) %>%
+   addTiles() %>%
+   addLegend(pal = pal, values = ~`Duration category`, opacity = 1, 
+            title = "Duration category", position = "bottomright") %>%   addProviderTiles("CartoDB.Positron")
 a5_locations
 ```
 
@@ -212,17 +222,11 @@ bjoin0 <- b0 %>%
   select(volcano_number, volcano_number, vei, `Total eruption`) %>%
   left_join(volcano) 
 
-btect0 <- bjoin0 %>%
-  select(volcano_number, volcano_name, vei, tectonic_settings) %>%
-  ungroup(start_year) %>%
-  count(tectonic_settings) %>%
-  mutate(Percentage = n/sum(n)*100)
-
  pal1 <- colorFactor(
   palette = c('yellow', 'orange', 'red', 'dark red'),
   domain = b0$vei
 )
-
+# categorised by VEI
 b0_locations = leaflet(data = b0) %>%
   addProviderTiles(providers$Esri.WorldImagery, group="Satellite") %>%
   addCircles(
@@ -233,15 +237,18 @@ b0_locations = leaflet(data = b0) %>%
     fill=TRUE, color= ~pal1(vei),
     weight= 10,
     stroke = FALSE, fillOpacity = 0.8,
-    label = b0$volcano_name)
+    label = b0$volcano_name) %>%
+   addTiles() %>%
+   addLegend(pal = pal1, values = ~vei, opacity = 1, 
+            title = "VEI level", position = "bottomright") %>%   addProviderTiles("CartoDB.Positron")
 b0_locations 
  
 head(b0, 5)
 
 # erupt twice or more within a year
 bjoin0 <- b0 %>%
+  ungroup(vei, start_year) %>%
   filter(n >= 2) %>%
-  ungroup(start_year) %>%
   distinct(volcano_number, volcano_name) %>%
   left_join(volcano)
 
@@ -252,23 +259,33 @@ btect0 <- bjoin0 %>%
   ungroup() %>%
   mutate(Percentage = n/sum(n)*100)
 
-btect0 %>% 
+bmean0 <- b0 %>%
+  ungroup(vei, start_year) %>%
+  filter(n >= 2) %>%
+  summarise(mean(vei))
+# keep
+bhftectplot <- btect0 %>% 
   filter(!is.na(tectonic_settings)) %>%
   ggplot() + 
-  geom_col(aes(x = tectonic_settings, y = n)) +
-  coord_flip() 
+  geom_col(aes(x = reorder(tectonic_settings, n), y = n)) +
+  coord_flip() +
+  labs(x = "Tectonic settings",
+       y = "Count",
+       title = "Tectonic settings with high frequency ( ≥2 eruptions in 1 year) eruptions")
 ```
 
 ```{r}
+# keep
 hl_tect <- eruptions %>%
   na.exclude(vei) %>%
   left_join(volcano) %>%
   na.exclude(tectonic_settings) %>%
   select(tectonic_settings, vei) %>%
   group_by(tectonic_settings) %>%
-  summarise(`Avg vei` = mean(vei)) %>%
-  arrange(desc(`Avg vei`))
-hl_tect
+  summarise(`Avg vei` = round(mean(vei), digits = 3)) %>%
+  arrange(desc(`Avg vei`)) 
+
+kable(hl_tect, caption = "Average VEI level for each tectonic setting")
 ```
 
 
