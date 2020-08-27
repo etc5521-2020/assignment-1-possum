@@ -304,25 +304,32 @@ volcano_population_long <- volcano_population %>%
                values_to = "no_of_people") %>% 
   mutate(no_of_people = factor(no_of_people, levels = c("<= 100", "101-1,000", "1,001-10,000", "10,000-100,000", "100,001-1,000,000", "> 1,000,000")))
 
-volcano_population_long %>% 
+volcano_population_long$category <- factor(volcano_population_long$category, levels = c("no_of_people_100km", "no_of_people_30km", "no_of_people_10km", "no_of_people_5km"))
+
+pop_plot <- volcano_population_long %>% 
   group_by(category) %>% 
   ggplot() +
-  geom_bar(aes(x = as.factor(no_of_people))) +
+  geom_bar(aes(x = as.factor(no_of_people)),
+           fill = "orange") +
   facet_wrap(~category, ncol = 1) +
   coord_flip() +
-  ggtitle("number of people within 5km, 10km, 30km and 100km") +
   ylab("categories (number of people)") +
-  xlab("count")
+  xlab("count") +
+  theme_void() +
+  theme(panel.background = element_rect(fill = "grey20"),
+        plot.background = element_rect(fill = "grey20")) +
+  theme(plot.title = element_text(size = 20, face = "bold", colour = "orange")) +
+  theme(axis.title.x = element_text(colour = "white"),
+        axis.text.x = element_text(colour = "white"),
+        axis.text.y = element_text(colour = "white",
+                                   hjust = 1),
+        axis.title = element_text(colour = "white"))
 
-test <- volcano_population_long %>% 
-  group_by(category) %>% 
-  count(no_of_people) %>% 
-  filter(no_of_people == "> 1,000,000")
 ```
 
-There is no fixed safety risk zones as volcanoes are unpredictable. However, it is said around 1km for small/medium sized eruptions(VEI = 1-2) is relatively safe as long as volcanic projectiles do not fall in that area. Given this, most volcanoes are less than 5km from a population of people.
 
-```{r triangles-fun, fig.align="center", fig.height=12, fig.width=12}
+
+```{r triangles-fun, fig.align="center", fig.height=12, fig.width=15}
 dt.triangle <- data.table(group = c(1,1,1,
                                     2,2,2,
                                     3,3,3,
@@ -460,7 +467,7 @@ no_of_volcanoes_text6 <- tibble(id = c("7 volcanoes", "7 volcanoes", "56 volcano
                                x = rep(16,4),
                                y = c(-4,28.6,54.8,77.2))
 
-ggplot() +
+triangle <- ggplot() +
   geom_polygon(data = dt.triangle,
                aes(x = polygon.x, y = polygon.y, group = group),
                fill = "orange") +
@@ -523,14 +530,14 @@ ggplot() +
             aes(x = x, y = y, label = id),
             size = 6,
             colour = "red") 
-  
-   
-   
+
+grid.arrange(triangle, pop_plot, ncol = 2,
+             widths = c(0.7, 0.3))
    
 
 ```
 
-
+There is no fixed safety risk zones as volcanoes are unpredictable. However, it is said around 1km for small/medium sized eruptions(VEI = 1-2) is relatively safe as long as volcanic projectiles do not fall in that area. Given this, most volcanoes are less than 5km from a population of people.
 
 ### World map with number of eruptions in each country
 ```{r}
@@ -581,8 +588,21 @@ volcano_country_join %>%
   geom_point(data = volcano_erupted,
              aes(x = longitude, y = latitude,
                  size = population_within_5_km),
-                 colour = "red")
+                 colour = "red") +
+  theme_map() +
+  theme(panel.background = element_rect(fill = "grey20"),
+        plot.background = element_rect(fill = "grey20")) +
+  theme(legend.position = "right",
+        legend.background = element_rect(colour = "grey20")) + 
+  theme(plot.title = element_text(size = 20, face = "bold", colour = "orange"),
+        plot.subtitle = element_text(size = 16, colour = "orange")) +
+  guides(fill = FALSE,
+         size = FALSE)
+  
 ```
+
+Above shows plot with dots filled with number of eruptions in each country. and larger dot sizes represent the number of population in the vicinity. 
+
 
 ### What is the probabability of a volcano erupting in each VEI category after 1812?
 
