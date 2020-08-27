@@ -85,4 +85,42 @@ world %>%
                fill = NA,
                colour = "dark green")
 
+# ------------ Multiple plates
+# mock up data frame with 2 distinct plates (mirror image of each other)
+plates <- rbind(plate %>% mutate(plate = 1),
+                plate %>% mutate(lat = -lat, plate = 2)) %>%
+  select(plate, lat, lon)
+
+# process data for geom_polygon approach
+plates2 <- plates %>%
+
+  # split into separate data frame for each plate
+  split(.$plate) %>%
+
+  # convert to polygon & split along date line (as before)
+  lapply(function(d) d %>% select(lon, lat) %>%
+           as.matrix() %>%
+           list() %>%
+           st_polygon() %>%
+           st_wrap_dateline()) %>%
+
+  # convert each plate back to data frame (as before)
+  lapply(function(d) lapply(seq_along(d),
+                            function(i) as.data.frame(d[[i]][[1]]) %>%
+                              rename(lon = V1, lat = V2) %>%
+                              mutate(group = i)) %>%
+           data.table::rbindlist()) %>%
+  # combine into one overall data frame
+  bind_rows(.id = "plate") %>%
+  mutate(group = paste(plate, group, sep = "."))
+
+# result
+world %>%
+  ggplot() +
+  geom_map(map = world,
+           aes(x = long, y = lat,
+               map_id = region)) +
+  geom_polygon(data = plates2,
+               aes(x = lon, y = lat, group = group),
+               fill = NA, colour = "dark green")
 

@@ -130,8 +130,8 @@ plates2 <- lapply(seq_along(plates),
   rename(lon = V1, lat = V2)
 ```
 
+
 ```{r}
-# World Map Coordinates
 world <- map_data("world")
 
 # add continent coordinates
@@ -139,6 +139,11 @@ continent_coord <- tibble(id = c("Africa", "Asia", "Europe", "North America", "O
                           long = c(15, 80, 20, -100, 150, -60),
                           lat = c(15, 35, 50, 40, -25, -15),
                           stringsAsFactors = F)
+
+# add ring of fire coordinates
+ring_of_fire <- tibble(id = c("Ring of Fire", "Ring of Fire"), 
+                    long = c(180, -180),
+                    lat = c(40, 40))
 
 # ----- plot world map
 world %>% 
@@ -166,11 +171,19 @@ world %>%
                 label = id),
             colour = "blue",
             size = 5) +
+  geom_text(data = ring_of_fire,
+            aes(x = long, 
+                y = lat,
+                label = id),
+            colour = "red") +
   # remove legends
   guides(colour = FALSE,
          size = FALSE,
          alpha = FALSE) +
   ggtitle("Active Volcanoes, Tectonic Plates and The Ring of Fire")
+  
+
+  
 ```
 
 Above shows the world map of Active Volcanoes with tectonic plate boundaries overlaid. 
@@ -179,11 +192,202 @@ We noted that most of the volcanoes lie along the Pacific Ocean and found that w
 
 To achieve the map, we could not just plot the tectonic boundaries as the polygons stretch across the world map (looking like they are at opposite ends of the world when in fact they are side by side since the globe is round while ggplot is 2D). So, we split the tectonic plates at the prime meridian (x-intercept where long = 0) - was helped by a helpful member at [StackOverflow](https://stackoverflow.com/questions/63591697/how-to-split-tectonic-plate-boundary-polygon-in-a-way-to-prevent-line-across-the/63593236?noredirect=1#comment112479435_63593236)
 
+```{r}
+# recenter world map
+include_graphics("images/ring_of_fire.png")
+```
+- Graphics above shows the ring of fire that is found along pacific coast
+
+## The interaction between volcanoes and humans - How worried should you be about volcanoes?
+
+### population around volcanoes
+```{r}
+volcano_erupted %>% 
+  summarize(mean_5km = summary(population_within_5_km),
+            mean_10km = summary(population_within_10_km),
+            mean_30km = summary(population_within_30_km),
+            mean_100km = summary(population_within_100_km))
+
+volcano_population <- volcano_erupted %>% 
+  mutate(no_of_people_5km = case_when(population_within_5_km <= 100 ~ "<= 100", 
+                                  population_within_5_km >= 101 & population_within_5_km <= 1000 ~ "101-1,000",
+                                  population_within_5_km > 1000 & population_within_5_km <= 10000 ~ "1,001-10,000",
+                                  population_within_5_km > 10000 & population_within_5_km <= 100000 ~ "10,000-100,000",
+                                  population_within_5_km > 100000 & population_within_5_km <= 1000000 ~ "100,001-1,000,000",
+                                  population_within_5_km > 1000000 ~ "> 1,000,000")) 
+
+volcano_population <- volcano_population %>% 
+  mutate(no_of_people_10km = case_when(population_within_10_km <= 100 ~ "<= 100", 
+                                  population_within_10_km >= 101 & population_within_10_km <= 1000 ~ "101-1,000",
+                                  population_within_10_km > 1000 & population_within_10_km <= 10000 ~ "1,001-10,000",
+                                  population_within_10_km > 10000 & population_within_10_km <= 100000 ~ "10,000-100,000",
+                                  population_within_10_km > 100000 & population_within_10_km <= 1000000 ~ "100,001-1,000,000",
+                                  population_within_10_km > 1000000 ~ "> 1,000,000")) 
 
 
+volcano_population <- volcano_population %>% 
+  mutate(no_of_people_30km = case_when(population_within_30_km <= 100 ~ "<= 100", 
+                                  population_within_30_km >= 101 & population_within_30_km <= 1000 ~ "101-1,000",
+                                  population_within_30_km > 1000 & population_within_30_km <= 10000 ~ "1,001-10,000",
+                                  population_within_30_km > 10000 & population_within_30_km <= 100000 ~ "10,000-100,000",
+                                  population_within_30_km > 100000 & population_within_30_km <= 1000000 ~ "100,001-1,000,000",
+                                  population_within_30_km > 1000000 ~ "> 1,000,000")) 
+
+volcano_population <- volcano_population %>% 
+  mutate(no_of_people_100km = case_when(population_within_100_km <= 100 ~ "<= 100", 
+                                  population_within_100_km >= 101 & population_within_100_km <= 1000 ~ "101-1,000",
+                                  population_within_100_km > 1000 & population_within_100_km <= 10000 ~ "1,001-10,000",
+                                  population_within_100_km > 10000 & population_within_100_km <= 100000 ~ "10,000-100,000",
+                                  population_within_100_km > 100000 & population_within_100_km <= 1000000 ~ "100,001-1,000,000",
+                                  population_within_100_km > 1000000 ~ "> 1,000,000")) 
+
+volcano_population_long <- volcano_population %>% 
+  pivot_longer(cols = no_of_people_5km:no_of_people_100km,
+               names_to = "category",
+               values_to = "no_of_people") %>% 
+  mutate(no_of_people = factor(no_of_people, levels = c("<= 100", "101-1,000", "1,001-10,000", "10,000-100,000", "100,001-1,000,000", "> 1,000,000")))
+
+volcano_population_long %>% 
+  group_by(category) %>% 
+  ggplot() +
+  geom_bar(aes(x = as.factor(no_of_people))) +
+  facet_wrap(~category, ncol = 1) +
+  coord_flip() +
+  ggtitle("number of people within 5km, 10km, 30km and 100km") +
+  ylab("categories (number of people)") +
+  xlab("count")
+```
+
+There is no fixed safety risk zones as volcanoes are unpredictable. However, it is said around 1km for small/medium sized eruptions(VEI = 1-2) is relatively safe as long as volcanic projectiles do not fall in that area. Given this, most volcanoes are less than 5km from a population of people.
+
+### World map with number of eruptions in each country
+```{r}
+# clean volcano$country to match world data set
+volcano_country <- volcano_erupted %>% 
+  mutate(country = case_when(
+    country == "Armenia-Azerbaijan" ~ "Armenia",
+    country == "Burma (Myanmar)" ~ "Burma",
+    country %in% c("Chile-Argentina","Chile-Bolivia", "Chile-Peru") ~ "Chile",
+    country == "China-North Korea" ~ "China",
+    country == "Colombia-Ecuador" ~ "Colombia",
+    country %in% c("DR Congo", "DR Congo-Rwanda") ~ "Democratic Republic of the Congo",
+    country == "El Salvador-Guatemala" ~ "El Salvador",
+    country == "Eritrea-Djibouti" ~ "Eritrea",
+    country %in% c("Ethiopia-Djibouti", "Ethiopia-Kenya") ~ "Ethiopia",
+    country == "Guatemala-El Salvador" ~ "Guatemala",
+    country == "Japan - administered by Russia" ~ "Japan",
+    country == "Mexico-Guatemala" ~ "Mexico",
+    country == "North Korea-South Korea" ~ "North Korea",
+    country == "Saint Kitts and Nevis" ~ "Saint Kitts",
+    country == "Syria-Jordan-Saudi Arabia" ~ "Syria",
+    country == "Saint Vincent and the Grenadines" ~ "Saint Vincent",
+    country == "Uganda-Rwanda" ~ "Uganda",
+    country == "United Kingdom" ~ "UK",
+    country == "United States" ~ "USA",
+    TRUE ~ country
+  )) 
+
+volcano_country_count <- volcano_country %>% 
+  group_by(country) %>% 
+  count() %>% 
+  ungroup()
+
+world <- map_data("world")
+
+volcano_country_join <- left_join(world, volcano_country_count,
+          by = c("region" = "country")) %>% 
+  # replace n = NA to 0
+  mutate(n = ifelse(is.na(n), 0, n))
+
+# plot world map; fill number of volcanoes that erupt in each country 
+volcano_country_join %>% 
+  ggplot() +
+  geom_map(map = volcano_country_join,
+           aes(x = long, y = lat, map_id = region,
+               fill = n)) +
+  # plot dot points representing active volcanoes
+  geom_point(data = volcano_erupted,
+             aes(x = longitude, y = latitude,
+                 size = population_within_5_km),
+                 colour = "red")
+```
+
+### What is the probabability of a volcano erupting in each VEI category after 1812?
+
+We filtered the data set to after 1812 where the last observed VEI 7 was recorded at Mount Tambora.
+
+```{r}
+# filter eruptions; to after 1812: eruption of Mount Tambora
+eruptions_1812 <- eruptions %>% 
+  filter(start_year >= 1812) 
+
+# see lag; between last eruption to next
+eruptions_1812 <- eruptions_1812 %>% 
+  arrange(start_year, volcano_name) %>%  
+  group_by(volcano_name) %>% 
+  # find year between eruptions = year of eruption + (time between last and start of eruption)
+  mutate(lag_year = start_year + (lag(start_year) - start_year))
+```
 
 
+```{r}
+library(ggridges)
+eruptions_1812_pdf <- eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
+  group_by(volcano_name, vei) %>% 
+  mutate(no_of_eruptions = n(),
+         vei = factor(vei, levels = c(0, 1, 2,3 ,4, 5, 6, 7))) 
 
+eruptions_1812_pdf %>% 
+  ggplot() +
+  stat_density_ridges(aes(y = factor(vei, levels = c(0,1,2,3,4,5,6,7)),
+                          x = no_of_eruptions,
+                          fill = vei),
+                      # colour median line & adjust size
+                      quantile_lines = TRUE,
+                      vline_color = "red",
+                      vline_size = 1.5,
+                      quantiles = 0.5,
+                      # add jittered points
+                      jittered_points = TRUE,
+                      alpha = 0.7,
+                      position = "raincloud") +
+  scale_x_continuous(breaks = seq(from = 0, to = 70, by = 5 )) +
+  ylab("VEI") +
+  xlab("number of eruptions") +
+  ggtitle("Probability density function of eruptions in each VEI category")
+
+eruptions_1812_pdf %>% 
+  group_by(vei) %>% 
+  summarise(min = min(no_of_eruptions),
+            `1Q` = quantile(no_of_eruptions, 0.25),
+            median = median(no_of_eruptions),
+            `3Q` = quantile(no_of_eruptions, 0.75),
+            max = max(no_of_eruptions)) %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+### How Frequent does volcanoes erupt?
+```{r}
+# Plot all volcanoes that erupted more than once
+eruptions_1812 %>% 
+  # filter volcanoes; with only 1 eruption i.e. NA for lag_year variable
+  filter(!is.na(lag_year)) %>% 
+  ggplot() +
+  geom_tile(aes(x = volcano_name,
+                 y = lag_year),
+            fill = "red",
+            size = 5) +
+  coord_flip() +
+  # facet by VEI
+  facet_wrap(~vei)
+```
+
+
+```{r}
+# plot top 10 volcanoes with maximum frequency
+```
 
 
 

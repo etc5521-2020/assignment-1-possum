@@ -401,11 +401,40 @@ plates2 <- lapply(seq_along(plates),
 ```
 
 ```{r}
+# # process data for geom_polygon approach
+# plates_2 <- rof %>%
+#   
+#   # split into separate data frame for each plate
+#   split(.$plate) %>% 
+#   
+#   # convert to polygon & split along date line (as before)
+#   lapply(function(d) d %>% select(lon, lat) %>%
+#            as.matrix() %>%
+#            list() %>%
+#            st_polygon() %>% 
+#            st_wrap_dateline()) %>%
+#   
+#   # convert each plate back to data frame 
+#    lapply(function(d) lapply(seq_along(d),
+#                             function(i) as.data.frame(d[[i]][[1]]) %>%
+#                               rename(lon = V1, lat = V2) %>%
+#                               mutate(group = i)) %>%
+#            data.table::rbindlist())
+#   
+```
+
+
+```{r}
 # add continent coordinates
 continent_coord <- tibble(id = c("Africa", "Asia", "Europe", "North America", "Oceania", "South America"),
                           long = c(15, 80, 20, -100, 150, -60),
                           lat = c(15, 35, 50, 40, -25, -15),
                           stringsAsFactors = F)
+
+# add ring of fire coordinates
+ring_of_fire <- tibble(id = c("Ring of Fire", "Ring of Fire"), 
+                    long = c(180, -180),
+                    lat = c(40, 40))
 
 # ----- plot world map
 world %>% 
@@ -433,15 +462,26 @@ world %>%
                 label = id),
             colour = "blue",
             size = 5) +
+  geom_text(data = ring_of_fire,
+            aes(x = long, 
+                y = lat,
+                label = id),
+            colour = "red") +
   # remove legends
   guides(colour = FALSE,
          size = FALSE,
          alpha = FALSE) +
   ggtitle("Active Volcanoes, Tectonic Plates and The Ring of Fire")
+  
+
 ```
 
 - ring of fire; path that trace boundary; between several tectonic plates
   - contain 75% of planet's volcanoes & 90% of the world's active volcano
+
+```{r}
+
+```
 
 
 
