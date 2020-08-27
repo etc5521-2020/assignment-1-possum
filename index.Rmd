@@ -13,73 +13,45 @@ output:
 [This assignment is for ETC5521 Assignment 1 by Team `r rmarkdown::metadata$team` comprising of `r knitr::combine_words(rmarkdown::metadata$author)`.]{style="color:#006DAE;"}
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(echo = FALSE)
-```
-
-```{r load-libraries, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      warning = FALSE,
+                      message = FALSE)
 library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(gridExtra)
+library(sf)
 ```
 
-```{r, eval = FALSE}
-# ----- cleaning script 
-library(readxl)
-library(tidyverse)
-
-eruption_list <- read_csv("2020/2020-05-12/eruption_list.csv", skip = 1) %>% 
-  janitor::clean_names() %>% 
-  select(-contains("modifier"), -contains("uncertainty"))
-
-event_list <- read_csv("2020/2020-05-12/event_list.csv", skip = 1) %>% 
-  janitor::clean_names() %>% 
-  select(-contains("modifier"), -contains("uncertainty"))
-
-volcano_list <- read_csv("2020/2020-05-12/volcano_list.csv", skip = 1) %>% 
-  janitor::clean_names()
-
-eruption_list %>% 
-  write_csv("2020/2020-05-12/eruptions.csv")
-
-event_list %>% 
-  write_csv("2020/2020-05-12/events.csv")
-
-volcano_list %>% 
-  write_csv("2020/2020-05-12/volcano.csv")
-```
 
 ```{r getting-data}
 # Get the Data
-
 volcano <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv')
 eruptions <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/eruptions.csv')
 events <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/events.csv')
 tree_rings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/tree_rings.csv')
 sulfur <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/sulfur.csv')
 
-# --- Or read in with tidytuesdayR package (https://github.com/thebioengineer/tidytuesdayR)
-# PLEASE NOTE TO USE 2020 DATA YOU NEED TO USE tidytuesdayR version ? from GitHub
-
-# Either ISO-8601 date or year/week works!
-
-# Install via devtools::install_github("thebioengineer/tidytuesdayR")
-
-# tuesdata <- tidytuesdayR::tt_load('2020-05-12')
-# tuesdata <- tidytuesdayR::tt_load(2020, week = 20)
-
-# volcano <- tuesdata$volcano
+# tectonic plates coordinates
+rof <- read_csv("all.csv")
 ```
 
 
 # Introduction and motivation
 
-[FILL] Give the bigger picture of the data, and inspire the reader to learn more about the problem by reading your analysis. 
+Volcanoes are nature's explosive land forms and yet one of the most beautiful. We chanced upon data set released by `TidyTuesday` which is probably one of if not the most comprehensive data set to learn more about volcanoes. 
 
+Volcanoes date back to hundreds and thousands of years ago. This data exploration takes a closer look at the more recent active volcanoes around. 
+
+We start with a brief introduction into the world of volcanoes, then visit the interaction between volcano & humans and finally looking into the characteristics of volcano.
 
  
 # Data description
 
-The data source is from [The Smithsonian Institution](https://volcano.si.edu/). The data is supplied and cleaned, downloadable from [tidytuesday github](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-05-12/readme.md).
+The data source is from [The Smithsonian Institution](https://volcano.si.edu/). The data is available, and cleaned, downloadable from [tidytuesday github](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-05-12/readme.md). Cleaning script is also supplied.
 
-This Volcano data set is probably the most comprehensive data set around. They contain 5 linked data sets, each with looking at a particular:  
+
+Data provided contains 5 linked data sets, each with looking at a particular aspect of volcano:  
 
 - `volcano`: Provides information on 958 volcanoes such as
   - its metadata: volcano name, type, country location, evidence category, longitude and latitude
@@ -99,6 +71,129 @@ This Volcano data set is probably the most comprehensive data set around. They c
 
 # Analysis and findings
 
-[FILL] Should include at least one plot or numerical summary for each of your questions, that helps the reader arrive at an answer. You should also write paragraphs describing the methods, summaries and findings. 
+## World Of Active Volcanoes
+
+```{r volcano, include = FALSE}
+#types of volcanoes
+volcano %>% 
+  count(primary_volcano_type) 
+
+# categorize volcanoes into 4 main types
+volcano_types <- volcano %>% 
+  mutate(primary_volcano_type = case_when(
+    str_detect(primary_volcano_type, "Stratovolcano") ~ "Stratovolcano",
+    str_detect(primary_volcano_type, "Shield") ~ "Shield",
+    str_detect(primary_volcano_type, "Caldera") ~ "Caldera",
+    TRUE ~ "Other"
+  ))
+
+unique(volcano_types$primary_volcano_type)
+```
+
+### World Map of Active Volcanoes erupt
+
+```{r volcano-erupted, include = FALSE}
+# join only volcanoes that erupted
+volcano_erupted <-inner_join(volcano_types, eruptions) %>%
+  # select relevant variables
+  select(volcano_name, vei, start_year, end_year, last_eruption_year, primary_volcano_type, country, latitude, longitude, elevation, evidence_category, population_within_5_km, population_within_10_km, population_within_30_km, population_within_100_km) %>% 
+# concatenate country & volcano name
+  mutate(volcano = str_c(volcano_name, country, sep = " -"), .keep = "all") 
+
+# summarize volcano erupted; keeping all columns
+volcano_erupted <- volcano_erupted %>% 
+  group_by(volcano) %>%
+  # find count (i.e. no. of times volcano erupted)
+  mutate(n = n()) %>%  
+  distinct(volcano, 
+           .keep_all = TRUE) %>% 
+  ungroup()
+```
+
+
+```{r}
+plate <- unique(rof$plate) %>% 
+  tibble(plate = .)
+
+# convert to sf object & split into 2 polygons (to prevent across dateline)
+plates <- map(.x = plate$plate,
+    .f = function(x){
+      st_polygon(x = list(as.matrix(rof %>% filter(plate == x) %>%  select(lon, lat)))) %>% 
+  st_wrap_dateline()
+    }) 
+
+# convert polygons back to dataframe
+plates2 <- lapply(seq_along(plates), 
+                 function(i) as.data.frame(plates[[i]][[1]]) %>% 
+                   mutate(group = i)) %>%
+  data.table::rbindlist() %>% 
+  rename(lon = V1, lat = V2)
+```
+
+```{r}
+# World Map Coordinates
+world <- map_data("world")
+
+# add continent coordinates
+continent_coord <- tibble(id = c("Africa", "Asia", "Europe", "North America", "Oceania", "South America"),
+                          long = c(15, 80, 20, -100, 150, -60),
+                          lat = c(15, 35, 50, 40, -25, -15),
+                          stringsAsFactors = F)
+
+# ----- plot world map
+world %>% 
+  ggplot() +
+  geom_map(map = world,
+           aes(x = long, y = lat,
+               map_id = region)) +
+  geom_point(data = volcano_erupted,
+             aes(x = longitude, y = latitude,
+                 shape = primary_volcano_type),
+                 colour = "red",
+                 size = 1.5) +
+  theme(legend.position = "bottom") +
+  geom_polygon(data = plates2,
+               aes(x = lon,
+                   y = lat,
+                   group = group),
+               fill = NA,
+               colour = "dark green",
+               size = 1.5) +
+  # add continent text
+  geom_text(data = continent_coord,
+            aes(x = long, 
+                y = lat,
+                label = id),
+            colour = "blue",
+            size = 5) +
+  # remove legends
+  guides(colour = FALSE,
+         size = FALSE,
+         alpha = FALSE) +
+  ggtitle("Active Volcanoes, Tectonic Plates and The Ring of Fire")
+```
+
+Above shows the world map of Active Volcanoes with tectonic plate boundaries overlaid. 
+
+We noted that most of the volcanoes lie along the Pacific Ocean and found that was dubbed the Ring of Fire. Interestingly, this is where 75% of the World's Volcanoes are situated and 90% of active ones!
+
+To achieve the map, we could not just plot the tectonic boundaries as the polygons stretch across the world map (looking like they are at opposite ends of the world when in fact they are side by side since the globe is round while ggplot is 2D). So, we split the tectonic plates at the prime meridian (x-intercept where long = 0) - was helped by a helpful member at [StackOverflow](https://stackoverflow.com/questions/63591697/how-to-split-tectonic-plate-boundary-polygon-in-a-way-to-prevent-line-across-the/63593236?noredirect=1#comment112479435_63593236)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # References

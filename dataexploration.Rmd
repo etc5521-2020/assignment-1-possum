@@ -8,6 +8,10 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(gridExtra)
+library(sf)
 
 # read in data
 volcano <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv')
@@ -49,7 +53,7 @@ What is the ideal setting for a volcano to form?
   - volcano_name// country// regions// lat// long
   - population within 5,10,30,100km
 
-## Types of Volcanoes
+## what; types of Volcanoes
 ```{r}
 #types of volcanoes
 volcano %>% 
@@ -122,6 +126,166 @@ volcano_elevation <- volcano_types %>%
 volcano_elevation
 ```
 
+# ========== Eruption Data set
+
+- One row in the eruptions data set represents a case of volcano eruption
+
+## what; evidence_method_dating
+
+```{r}
+unique(eruptions$evidence_method_dating)
+
+eruptions %>% 
+  count(evidence_method_dating)
+```
+
+
+## What is the date range of this data set?
+```{r}
+eruptions %>% 
+  summarize(range(start_year, na.rm = TRUE))
+```
+- This data set dates back all the way to -11,345 years ago to the present.
+  - dubbed the Holocene period. i.e. time since the end of the last "ice age" 
+
+
+## How worried should you be about volcano eruptions?
+
+- Explositivity of volcanoes; measured through VEI (volcano explositivity index)
+  - theoretically: scale 0 to infinity
+  - largest VEI measured: 8
+  - most recent VEI 7 eruption was observed is in 1815: The eruption at Mount Tambora
+
+
+## How many times each volcano erupted? *note: `volcano_erupted` data set include only volcanoes that erupted
+```{r}
+# join only volcanoes that erupted
+volcano_erupted <-inner_join(volcano_types, eruptions) %>%
+  # select relevant variables
+  select(volcano_name, vei, start_year, end_year, last_eruption_year, primary_volcano_type, country, latitude, longitude, elevation, evidence_category, population_within_5_km, population_within_10_km, population_within_30_km, population_within_100_km) %>% 
+# concatenate country & volcano name
+  mutate(volcano = str_c(volcano_name, country, sep = " -"), .keep = "all") 
+
+# summarize volcano erupted; keeping all columns
+volcano_erupted <- volcano_erupted %>% 
+  group_by(volcano) %>%
+  # find count (i.e. no. of times volcano erupted)
+  mutate(n = n()) %>%  
+  distinct(volcano, 
+           .keep_all = TRUE) %>% 
+  ungroup()
+```
+
+- There were total of 11,1178 eruptions during this year. (roughly about 1 per year!!!)
+  - Eruptions are caused by 688 volcanoes
+
+```{r}
+volcano_erupted %>% 
+  summarize(mean_5km = summary(population_within_5_km),
+            mean_10km = summary(population_within_10_km),
+            mean_30km = summary(population_within_30_km),
+            mean_100km = summary(population_within_100_km))
+
+volcano_population <- volcano_erupted %>% 
+  mutate(no_of_people_5km = case_when(population_within_5_km <= 100 ~ "<= 100", 
+                                  population_within_5_km >= 101 & population_within_5_km <= 1000 ~ "101-1,000",
+                                  population_within_5_km > 1000 & population_within_5_km <= 10000 ~ "1,001-10,000",
+                                  population_within_5_km > 10000 & population_within_5_km <= 100000 ~ "10,000-100,000",
+                                  population_within_5_km > 100000 & population_within_5_km <= 1000000 ~ "100,001-1,000,000",
+                                  population_within_5_km > 1000000 ~ "> 1,000,000")) 
+
+volcano_population <- volcano_population %>% 
+  mutate(no_of_people_10km = case_when(population_within_10_km <= 100 ~ "<= 100", 
+                                  population_within_10_km >= 101 & population_within_10_km <= 1000 ~ "101-1,000",
+                                  population_within_10_km > 1000 & population_within_10_km <= 10000 ~ "1,001-10,000",
+                                  population_within_10_km > 10000 & population_within_10_km <= 100000 ~ "10,000-100,000",
+                                  population_within_10_km > 100000 & population_within_10_km <= 1000000 ~ "100,001-1,000,000",
+                                  population_within_10_km > 1000000 ~ "> 1,000,000")) 
+
+
+volcano_population <- volcano_population %>% 
+  mutate(no_of_people_30km = case_when(population_within_30_km <= 100 ~ "<= 100", 
+                                  population_within_30_km >= 101 & population_within_30_km <= 1000 ~ "101-1,000",
+                                  population_within_30_km > 1000 & population_within_30_km <= 10000 ~ "1,001-10,000",
+                                  population_within_30_km > 10000 & population_within_30_km <= 100000 ~ "10,000-100,000",
+                                  population_within_30_km > 100000 & population_within_30_km <= 1000000 ~ "100,001-1,000,000",
+                                  population_within_30_km > 1000000 ~ "> 1,000,000")) 
+
+volcano_population <- volcano_population %>% 
+  mutate(no_of_people_100km = case_when(population_within_100_km <= 100 ~ "<= 100", 
+                                  population_within_100_km >= 101 & population_within_100_km <= 1000 ~ "101-1,000",
+                                  population_within_100_km > 1000 & population_within_100_km <= 10000 ~ "1,001-10,000",
+                                  population_within_100_km > 10000 & population_within_100_km <= 100000 ~ "10,000-100,000",
+                                  population_within_100_km > 100000 & population_within_100_km <= 1000000 ~ "100,001-1,000,000",
+                                  population_within_100_km > 1000000 ~ "> 1,000,000")) 
+
+volcano_population_long <- volcano_population %>% 
+  pivot_longer(cols = no_of_people_5km:no_of_people_100km,
+               names_to = "category",
+               values_to = "no_of_people") %>% 
+  mutate(no_of_people = factor(no_of_people, levels = c("<= 100", "101-1,000", "1,001-10,000", "10,000-100,000", "100,001-1,000,000", "> 1,000,000")))
+
+volcano_population_long %>% 
+  group_by(category) %>% 
+  ggplot() +
+  geom_bar(aes(x = as.factor(no_of_people))) +
+  facet_wrap(~category, ncol = 1) +
+  coord_flip() 
+```
+
+### Plot world map of countries fill with highest no. of volcano eruptions
+```{r}
+# clean volcano$country to match world data set
+volcano_country <- volcano_erupted %>% 
+  mutate(country = case_when(
+    country == "Armenia-Azerbaijan" ~ "Armenia",
+    country == "Burma (Myanmar)" ~ "Burma",
+    country %in% c("Chile-Argentina","Chile-Bolivia", "Chile-Peru") ~ "Chile",
+    country == "China-North Korea" ~ "China",
+    country == "Colombia-Ecuador" ~ "Colombia",
+    country %in% c("DR Congo", "DR Congo-Rwanda") ~ "Democratic Republic of the Congo",
+    country == "El Salvador-Guatemala" ~ "El Salvador",
+    country == "Eritrea-Djibouti" ~ "Eritrea",
+    country %in% c("Ethiopia-Djibouti", "Ethiopia-Kenya") ~ "Ethiopia",
+    country == "Guatemala-El Salvador" ~ "Guatemala",
+    country == "Japan - administered by Russia" ~ "Japan",
+    country == "Mexico-Guatemala" ~ "Mexico",
+    country == "North Korea-South Korea" ~ "North Korea",
+    country == "Saint Kitts and Nevis" ~ "Saint Kitts",
+    country == "Syria-Jordan-Saudi Arabia" ~ "Syria",
+    country == "Saint Vincent and the Grenadines" ~ "Saint Vincent",
+    country == "Uganda-Rwanda" ~ "Uganda",
+    country == "United Kingdom" ~ "UK",
+    country == "United States" ~ "USA",
+    TRUE ~ country
+  )) 
+
+volcano_country_count <- volcano_country %>% 
+  group_by(country) %>% 
+  count() %>% 
+  ungroup()
+
+world <- map_data("world")
+
+volcano_country_join <- left_join(world, volcano_country_count,
+          by = c("region" = "country")) %>% 
+  # replace n = NA to 0
+  mutate(n = ifelse(is.na(n), 0, n))
+
+# plot world map; fill number of volcanoes that erupt in each country 
+volcano_country_join %>% 
+  ggplot() +
+  geom_map(map = volcano_country_join,
+           aes(x = long, y = lat, map_id = region,
+               fill = n)) +
+  # plot dot points representing active volcanoes
+  geom_point(data = volcano_erupted,
+             aes(x = longitude, y = latitude,
+                 size = population_within_5_km),
+                 colour = "red")
+```
+
+
 
 ## which countries with most volcanoes?
 ```{r}
@@ -136,65 +300,8 @@ volcano %>%
 volcano %>% 
   filter(country == "Australia")
 ```
+- Australia has 2 volcanoes
 
-
-# ========== Eruption Data set
-
-One row in the eruptions data set represents a case of volcano eruption
-
-## What is the date range of this data set?
-```{r}
-eruptions %>% 
-  summarize(range(start_year, na.rm = TRUE))
-```
-- This data set dates back all the way to -11,345 years ago to the present.
-  - dubbed the Holocene period. i.e. time since the end of the last "ice age" 
-
-## How many times each volcano erupted? *note: `volcano_erupted` data set include only volcanoes that erupted
-```{r}
-# join only volcanoes that erupted
-volcano_erupted <-inner_join(volcano_types, eruptions) %>%
-  # select relevant variables
-  select(volcano_name, vei, start_year, end_year, last_eruption_year, primary_volcano_type, country, latitude, longitude, elevation, evidence_category, population_within_5_km, population_within_10_km, population_within_30_km, population_within_100_km) %>% 
-# concatenate country & volcano name
-  mutate(volcano = str_c(volcano_name, country, sep = " -"), .keep = "unused") 
-
-# summarize volcano erupted; keeping all columns
-volcano_erupted <- volcano_erupted %>% 
-  group_by(volcano) %>%
-  # find count (i.e. no. of times volcano erupted)
-  mutate(n = n()) %>%  
-  distinct(volcano, 
-           .keep_all = TRUE) %>% 
-  ungroup()
-
-```
-
-- There were total of 11,1178 eruptions during this year. (roughly about 1 per year!!!)
-  - Eruptions are caused by 688 volcanoes
-
-### what; mean & median of number of volcano eruptions per volcano?
-
-#### All time
-```{r}
-volcano_erupted %>% 
-  summarise(median = median(n),
-            mean = mean(n))
-```
-
-## How worried should you be about volcano eruptions?
-
-- Explositivity of volcanoes; measured through VEI (volcano explositivity index)
-  - theoretically: scale 0 to infinity
-  - largest VEI measured: 8
-  - most recent VEI 7 eruption was observed is in 1815: The eruption at Mount Tambora
-    
-```{r}
-unique(eruptions$evidence_method_dating)
-
-eruptions %>% 
-  count(evidence_method_dating)
-```
 
 ```{r}
 # filter eruptions; to after 1812: eruption of Mount Tambora
@@ -215,8 +322,8 @@ eruptions_1812 %>%
   ggplot() +
   geom_tile(aes(x = volcano_name,
                  y = lag_year),
-            size = 3,
-            colour = "red") +
+            fill = "red",
+            size = 5) +
   coord_flip() +
   # facet by VEI
   facet_wrap(~vei)
@@ -225,53 +332,59 @@ eruptions_1812 %>%
 ## probability distribution function of volcano eruptions in each VEI
 ```{r}
 library(ggridges)
-eruptions_1812 %>% 
+eruptions_1812_pdf <- eruptions_1812 %>% 
   filter(!is.na(vei)) %>% 
   group_by(volcano_name, vei) %>% 
   mutate(no_of_eruptions = n(),
-         vei = as.factor(vei)) %>%
+         vei = factor(vei, levels = c(0, 1, 2,3 ,4, 5, 6, 7))) 
+
+eruptions_1812_pdf %>% 
   ggplot() +
-  stat_density_ridges(aes(y = vei,
+  stat_density_ridges(aes(y = factor(vei, levels = c(0,1,2,3,4,5,6,7)),
                           x = no_of_eruptions,
                           fill = vei),
+                      # colour median line & adjust size
                       quantile_lines = TRUE,
+                      vline_color = "red",
+                      vline_size = 1.5,
                       quantiles = 0.5,
-                      alpha = 0.7,
+                      # add jittered points
                       jittered_points = TRUE,
-                      position = "points_jitter") +
-  scale_x_continuous(breaks = seq(from = 0, to = 70, by = 5 ))
+                      alpha = 0.7,
+                      position = "raincloud") +
+  scale_x_continuous(breaks = seq(from = 0, to = 70, by = 5 )) +
+  ylab("VEI") +
+  xlab("number of eruptions") +
+  ggtitle("Probability density function of eruptions in each VEI category")
+
+eruptions_1812_pdf %>% 
+  group_by(vei) %>% 
+  summarise(min = min(no_of_eruptions),
+            `1Q` = quantile(no_of_eruptions, 0.25),
+            median = median(no_of_eruptions),
+            `3Q` = quantile(no_of_eruptions, 0.75),
+            max = max(no_of_eruptions)) %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
+  
 ```
-- The probability of an eruption of VEI 5 and above is actually very rare
+
+- The density ridgeline plots above probability of an eruption occuring in each VEI category
+  - notably, VEI 4 upwards are pretty rare. 
+  
+
 
 
 
 # ========== World map
-```{r}
-# Plot world map
-world <- map_data("world")
 
-world %>% 
-  ggplot() +
-  geom_map(map = world,
-           aes(x = long, y = lat,
-               map_id = region)) +
-  geom_point(data = volcano_types,
-             aes(x = longitude, y = latitude,
-                 colour = primary_volcano_type,
-                 alpha = 0.7,
-                 size = elevation)) +
-  theme(legend.position = "bottom") 
-
-
-
-```
-
-- where is the ring of fire?
-- edit elevation sequence  
 
 ### Plot a world map of where volcanoes erupt
 
 ```{r}
+plate <- unique(rof$plate) %>% 
+  tibble(plate = .)
+
 # convert to sf object & split into 2 polygons (to prevent across dateline)
 plates <- map(.x = plate$plate,
     .f = function(x){
@@ -302,8 +415,9 @@ world %>%
                map_id = region)) +
   geom_point(data = volcano_erupted,
              aes(x = longitude, y = latitude,
+                 shape = primary_volcano_type),
                  colour = "red",
-                 size = 1.5)) +
+                 size = 1.5) +
   theme(legend.position = "bottom") +
   geom_polygon(data = plates2,
                aes(x = lon,
@@ -322,67 +436,13 @@ world %>%
   # remove legends
   guides(colour = FALSE,
          size = FALSE,
-         alpha = FALSE)
+         alpha = FALSE) +
+  ggtitle("Active Volcanoes, Tectonic Plates and The Ring of Fire")
 ```
 
-```{r}
-plate <- unique(rof$plate) %>% 
-  tibble(plate = .)
+- ring of fire; path that trace boundary; between several tectonic plates
+  - contain 75% of planet's volcanoes & 90% of the world's active volcano
 
-plate.sf <- st_polygon(x = list(as.matrix(rof %>% filter(plate == "KE") %>%  select(lon, lat)))) %>% 
-  st_wrap_dateline()
-
-plate.sf1 <- st_polygon(x = list(as.matrix(rof %>% filter(plate == "an") %>%  select(lon, lat)))) %>% 
-  st_wrap_dateline()
-
-plate.sf <- st_polygon(x = list(as.matrix(rof %>% filter(plate == "AP") %>%  select(lon, lat)))) %>% 
-  st_wrap_dateline()
-
-world %>% 
-  ggplot() +
-  geom_map(map = world,
-           aes(x = long, y = lat, map_id = region)) +
-  geom_sf(data = plate.sf,
-          colour = "dark green")
-```
-
-
-### Plot world map of countries fill with highest no. of volcanoes
-```{r}
-# clean volcano$country to match world data set
-volcano_country <- volcano %>% 
-  mutate(country = case_when(
-    country == "Armenia-Azerbaijan" ~ "Armenia",
-    country == "Burma (Myanmar)" ~ "Burma",
-    country %in% c("Chile-Argentina","Chile-Bolivia", "Chile-Peru") ~ "Chile",
-    country == "China-North Korea" ~ "China",
-    country == "Colombia-Ecuador" ~ "Colombia",
-    country %in% c("DR Congo", "DR Congo-Rwanda") ~ "Democratic Republic of the Congo",
-    country == "El Salvador-Guatemala" ~ "El Salvador",
-    country == "Eritrea-Djibouti" ~ "Eritrea",
-    country %in% c("Ethiopia-Djibouti", "Ethiopia-Kenya") ~ "Ethiopia",
-    country == "Guatemala-El Salvador" ~ "Guatemala",
-    country == "Japan - administered by Russia" ~ "Japan",
-    country == "Mexico-Guatemala" ~ "Mexico",
-    country == "North Korea-South Korea" ~ "North Korea",
-    country == "Saint Kitts and Nevis" ~ "Saint Kitts",
-    country == "Syria-Jordan-Saudi Arabia" ~ "Syria",
-    country == "Saint Vincent and the Grenadines" ~ "Saint Vincent",
-    country == "Uganda-Rwanda" ~ "Uganda",
-    country == "United Kingdom" ~ "UK",
-    country == "United States" ~ "USA",
-    TRUE ~ country
-  )) 
-
-volcano_country_count <- volcano_country %>% 
-  group_by(country) %>% 
-  count() 
-
-volcano_country_join <- left_join(world, volcano_country_count,
-          by = c("region" = "country")) %>% 
-  # replace n = NA to 0
-  mutate(n = ifelse(is.na(n), 0, n)) <- 
-```
 
 
 # ========== events data set
