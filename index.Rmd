@@ -24,6 +24,7 @@ library(mapview)
 library(viridis)
 library(rgdal)
 library(kableExtra)
+library(gridExtra)
 
 eruption_list <- read_csv("2020/2020-05-12/eruption_list.csv", skip = 1) %>% 
   janitor::clean_names() %>% 
@@ -107,18 +108,25 @@ a5num1 <- list2DF(a1) %>%
   mutate(`VEI` = print(c("Min", "Q1", "Median", "Mean", "Q3", "Max"))) 
 ```
 
-```{r}
+```{r jta1}
 a5num1k <- kable(a5num1, caption = "Five number summary and mean of duration for each VEI")
+a5num1k
 ```
+
+The general distribution of eruption duration is portrayed in BOXPLOT, in accordance with VEI level of eruptions. It is clear that eruptions for all VEI levels mostly last less than 1000 days (excluding outliers). Yet eruptions with VEI level 3 tend to last longer than all other levels with the median of 105.5 days and the 3rd quartile of 592.5 days. 
+For the lowest VEI level of 0, its minimum (0 days) and Q3 (94 days) durations are the shortest, followed by its Q1 (1.5 days) and median (14 days) as the second lowest ones among 6 levels. Nevertheless, its maximum duration (2774 days) exceeds that of VEI level 5 (2406 days) and 6 (154 days).
+For the highest VEI level of 6, even though its minimum duration (18 days) is the highest compared with all other levels, the remaining figures of five-number summary did not significantly differentiate itself against other levels. Surprisingly, the maximum duration (154 days) of VEI level 6 is the lowest compared to all levels.
+
 # keep
-```{r}
+```{r jfa1}
 abox <- ggplot(vei_du, aes(x = as.factor(vei), y = duration, color = vei)) +
   geom_boxplot(outlier.shape = NA) +
   coord_flip() +
-  scale_y_continuous(limits=c(-100,2000), breaks=seq(0,2000,500), expand = c(0, 0)) +
+  scale_y_continuous(limits=c(-100,1500), breaks=seq(0,1500,500), expand = c(0, 0)) +
   labs(title = "Five number summary distribtuion for VEI level from 0 to 6",
        x = "VEI",
        y = "Eruption duration (Days)")
+abox
 ```
 
 ```{r}
@@ -128,14 +136,18 @@ a2 <- vei_du %>%
   lm(duration ~ ., data = .)
 ```
 
+Pursuing this further, a goodness of fit measure is conducted to closely examine the relationship between VEI and duration. It can be seen that both values for r-square and adjusted r-squared are considered low where even converting them into percentage, they merely hold 1.625% and 1.565% respectively. This implies that only 1.625% of variance in duration can be explained by VEI level if a regression model is fitted, thus concluding the insignificant role of VEI in determining duration.
+
 ```{r}
 alm <- ggplot(vei_du, aes(x = vei, y = duration)) +
   geom_point() +
   geom_smooth(method = "lm") +
   labs(title = "Linear model of VEI against eruption duration")
-glance(a2) 
+aglm <- glance(a2) %>%
+  select(r.squared, adj.r.squared)
+kable(aglm)
 ```
-FIGURE summarises the distribution of eruption duration measured in days for each VEI level from 0 to 6.
+
 ```{r duration}
 a3 <- vei_du %>%
   filter(duration > 365) %>%
@@ -155,7 +167,8 @@ ajoin3 <- a3 %>%
     mutate(Percentage = n/sum(n)*100)
 ```
 
-```{r}  
+FIGURE first orders the volano eruptions with long duration ( >365 days) by their tectonic settings. Subduction zone / Continental crust ( >25km) dominates among all tectonic settings with most long duration eruptions both intuitively and proportionally - 90 long duration eruptions, accounting for 58.824% compared with others. Followed by Subduction zone / Continental crust ( >25 km) is Subduction zone / Oceanic crust ( <15km), yet a large gap between them is displayed. Particularly, 14 long duration eruptions occur on Subduction zone / Oceanic crust ( <15km), resulting with 9.15%. The remaining tectonic settings have very close figures, as well as proportion, having Intraplate / Intermediate crust (15-25 km) be the one with least long duration eruptions.
+```{r jfa2}  
 # keep
 altectplot <- atect3 %>% 
   filter(!is.na(tectonic_settings)) %>%
@@ -166,6 +179,7 @@ altectplot <- atect3 %>%
        y = "Count",
        title = "Tectonic settings with high duration ( >365 days) eruptions")
 ```
+
 ```{r}
 a4 <- vei_du %>%
   filter(duration < 30) %>%
@@ -185,7 +199,13 @@ atect4 <- ajoin4 %>%
   mutate(Percentage = n/sum(n)*100)
 ```
 
-```{r}
+```{r jcbplot}
+alstect <- grid.arrange(altectplot, astectplot)
+alstect
+```
+In the same way, the number of short duration ( <30 days) eruptions for each tectonic settins is exhibited below. A similarity between this plot and the above one for long duration eruptions is that Subduction zone / Continental crust ( >25 km) and Intraplate / Intermediate crust (15-25 km) still remain in the same position, in this case - short duration eruption. Some variation emerges within the middle range of the order. For instance, there are only 7 long duration eruptions (4.575%) on Rift zone / Oceanic crust ( <15km), however the number of short duration eruptions rises to 30, accounting for 10.067% among all tectonic settings. 
+Moreover, comparing the length of the bars, it is apparent that every number from long duration eruptions for all tectonic settings increase when it comes to short duration. Hence, short duration eruptions occur more frequently than the long ones.
+```{r jfa3}
 # keep
 astectplot <- atect4 %>% 
   filter(!is.na(tectonic_settings)) %>%
@@ -194,10 +214,11 @@ astectplot <- atect4 %>%
   coord_flip() +
    labs(x = "Tectonic settings",
        y = "Count",
-       title = "Tectonic settings with short duration ( ≤30 days) eruptions")
+       title = "Tectonic settings with short duration ( <30 days) eruptions")
 ```
 
-```{r}
+The MAP plots the locations of the volcanoes, categorised by their duration of eruptions. It can be easily observed that volcanoes with short duration eruptions are more concentrated, so are more likely to form into a "line" shape. On the other hand volcanoes with long durations seem to be more dispersed. Looking them as a whole, volcanoes are mainly located in coastline areas.
+```{r jma1}
 # keep
 a5 <- rbind(a3, a4)
 make_bbox(lon = a5$longitude, 
@@ -238,8 +259,8 @@ bjoin0 <- b0 %>%
   select(volcano_number, volcano_number, vei, `Total eruption`) %>%
   left_join(volcano) 
 ```
-
-```{r}
+This MAP captures the volcanoes that have erupted from year to year according to their respective VEI level.
+```{r jma2}
  pal1 <- colorFactor(
   palette = c('yellow', 'orange', 'red', 'dark red'),
   domain = b0$vei
@@ -281,18 +302,20 @@ bmean0 <- b0 %>%
   ungroup(vei, start_year) %>%
   filter(n >= 2) %>%
   summarise(mean(vei))
+
 ```
 
-```{r}
+```{r jfb1}
 # keep
 bhftectplot <- btect0 %>% 
   filter(!is.na(tectonic_settings)) %>%
   ggplot() + 
-  geom_col(aes(x = reorder(tectonic_settings, n), y = n)) +
+  geom_col(aes(x = reorder(tectonic_settings, n), y = n), fill = "blue") +
   coord_flip() +
   labs(x = "Tectonic settings",
        y = "Count",
        title = "Tectonic settings with high frequency ( ≥2 eruptions in 1 year) eruptions")
+bhftectplot
 ```
 
 ```{r}
@@ -307,7 +330,13 @@ hl_tect <- eruptions %>%
   arrange(desc(`Avg vei`)) 
 ```
 
-```{r}
+Grouped by 10 tectonic settings (NAs excluded), volcano eruptions on Rift zone / Intermediate crust (15-25 km) have the highest average VEI of 2.667, whereas those located on Intraplate / Oceanic crust ( <15 km) obtain the lowest average VEI of 0.923. 
+Reflecting on one of the findings, as the tectonic setting where most longer ( >365 days)  and shorter duration ( <30 days) of eruptions occur, meanwhile with most higher frequency ( ≥ 2 eruptions within 1 year) of eruptions, Subduction zone / Continental crust  (>25 km) does not incur a high average VEI. It instead lies in the middle range among the 10 tectonic settings, with the average VEI of 1.982.
+
+Overall, with the highest VEI average (2.667), neither long duration eruptions ( >365 days), nor high frequency (≥ 2 eruptions in 1 year) eruptions are found in Rift zone / Intermediate crust (15-25 km), while only one eruption of short duration ( <30 days) occurs in this setting.
+On the opposite, with the lowest ranking for average VEI (0.923), volcanoes on the Intraplate / Oceanic crust ( <15 km) don't tend to erupt with long duration ( >365 days) where it’s long duration eruption only holds 4.575%, compared with other tectonic settings. Nevertheless, it has a greater percentage for both short duration (5.033%) and high frequency (9.677%) eruptions.
+
+```{r jtt1}
 tect_avg <- kable(hl_tect, caption = "Average VEI level for each tectonic setting")
 tect_avg
 ```
