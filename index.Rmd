@@ -265,7 +265,7 @@ We first plotted the world map of Active Volcanoes with tectonic plate boundarie
 
 We found that most of the volcanoes lie along the Pacific Ocean tracing the boundaries of tectonic plates. We later found that was dubbed the [Ring of Fire(or Circum-Pacific Belt)](https://www.nationalgeographic.org/encyclopedia/ring-fire/) . This path is approximately 40,000km long and holds 75% of the World's Volcanoes are situated and 90% of active ones! The abundance of volcanoes are explained by significant tectonic plates in the area since volcanoes are formed by either converging or diverging tectonic plate boundaries, creating cracks in earth. 
 
-To achieve the map, we could not just plot the tectonic boundaries as the polygons stretch across the world map (looking like they are at opposite ends of the world when in fact they are side by side since the globe is round while ggplot is 2D). So, we split the tectonic plates at the prime meridian (x-intercept where long = 0) - was assisted by a helpful member Z.Lin at [StackOverflow](https://stackoverflow.com/questions/63591697/how-to-split-tectonic-plate-boundary-polygon-in-a-way-to-prevent-line-across-the/63593236?noredirect=1#comment112479435_63593236)
+To achieve the map, we could not just plot the tectonic boundaries as the polygons stretch across the world map (looking like they are at opposite ends of the world when in fact they are side by side since the globe is round while ggplot is 2D). So, we split the tectonic plates at the prime meridian (x-intercept where long = 0) - was assisted by a helpful member Z.Lin at [StackOverflow](https://stackoverflow.com/questions/63591697/how-to-split-tectonic-plate-boundary-polygon-in-a-way-to-prevent-line-across-the/63593236?noredirect=1#comment112479435_63593236). Also, we joined the datasets with world map provided by `ggplot` to find continent and country coordinates as well as dataset from [Kaggle](https://www.kaggle.com/cwthompson/tectonic-plate-boundaries) to obtain coordinates to plot the tectonic plates polygon.
 
 ```{r ring-of-fire, fig.align="center", fig.height=8, fig.width=14}
 # ---- fix longitude; recenter coordinates to center around ring of fire
@@ -606,7 +606,7 @@ With the above visualization, the height of the triangle(volcanoes) corresponds 
 
 Majority of the population within 5km reach of a volcano were less than 100. At a 10km range, it was a mix of population sizes. And having a population of more than 100,000 is relatively scarce.
 
-So how far must you be from a erupting volcano to be safe? There is no fixed safety risk zones(or distance) as volcanoes are unpredictable. Generally, around 1km for small/medium sized eruptions(VEI = 1-2) is relatively safe as long as volcanic projectiles do not fall in that area.[Volcanic Discovery](https://www.volcanodiscovery.com/volcanic_risk_zones.html#:~:text=4)%20Low%20Risk%20Zone&text=Typically%20you%20are%20more%20than,pyroclastic%20flows%20could%20be%20channeled.) Above figure was inspired by [Sil Aarts'](https://twitter.com/sil_aarts/status/1260156344319041537/photo/1) visualization.
+So how far must you be from a erupting volcano to be safe? There is no fixed safety risk zones(or distance) as volcanoes are unpredictable. Generally, around 1km for small/medium sized eruptions(VEI = 1-2) is relatively safe as long as volcanic projectiles do not fall in that area.[Volcanic Discovery](https://www.volcanodiscovery.com/volcanic_risk_zones.html#:~:text=4)%20Low%20Risk%20Zone&text=Typically%20you%20are%20more%20than,pyroclastic%20flows%20could%20be%20channeled.) Above figure was inspired by [Sil Aarts'](https://twitter.com/sil_aarts/status/1260156344319041537/photo/1) visualization where we use `geom_polygon` to create easy and intuitive visualizations.
 
 ### World map with number of eruptions in each country
 
@@ -737,6 +737,8 @@ volcano_country_join %>%
 
 Above shows plot with fill depending on the number of eruptions in each country and larger dot sizes represent the number of population in the vicinity. 
 
+Prominent countries(shaded orange) with the most active volcanoes lie on the Ring Of Fire.
+
 
 ### How likely will a volcano erupting in each VEI category after 1812?
 
@@ -744,7 +746,6 @@ VEI measures the explosiveness of volcanic eruptions. It is determined by the vo
 
 Theoretically, VEI is ranges from 0 to infinity. VEI scaled is on a log scale. Therefore each interval (increase of 1 in VEI) indicate an eruption 10x more powerful. Looking back at the last 132 million years, there were only 40 eruptions documented with VEI-8 magnitude and 10 eruptions of VEI-7 in last 10,000 years.
 
-We filtered the data set to after 1812 where the last observed VEI 7 was recorded at Mount Tambora. 
 
 ```{r eruptions-1812-wrangling}
 # filter eruptions; to after 1812: eruption of Mount Tambora
@@ -821,10 +822,14 @@ grid.arrange(eruptions_1812_pdf, t1, ncol = 2,
 
 ```
 
-The density plots above shows that likelihood of a VEI 4 and above is very unlikely (less than 1%). In fact, almost 98% of all volcanoes have less than VEI-3. 
+We filtered the data set to from present to after 1812 - where the last observed VEI 7 was recorded at Mount Tambora and plotted a density plot of VEI against the number of eruptions. Under the plot represents the number of volcanoes with the corresponding number of eruptions (slightly jittered). 
+
+The density plots above shows that likelihood of a volcano with VEI 4 or above is very unlikely (less than 1). In fact, almost 98% of all volcanoes have less than VEI-3. 
+
+As for lower, VEI categories, a volcano with VEI-2 occur rather frequently with quite a number of them occurring > 50 times over the time span.
 
 
-### How Frequent does volcanoes erupt?
+### So, How Frequent does volcanoes erupt?
 ```{r}
 volcano_frequent0 <- eruptions_1812 %>% 
   filter(!is.na(vei)) %>% 
@@ -947,7 +952,8 @@ frequency_plot <- volcano_frequent_total %>%
   ggplot() +
   geom_tile(aes(x = lag_year,
                 y = volcano),
-            fill = "red") +
+            fill = "red",
+            colour = "black") +
   ggtitle("Frequency of Most Active Volcanoes in each VEI category") +
   theme(plot.title = element_text(face = "bold",
                                   size = 15))
@@ -975,7 +981,11 @@ grid.arrange(frequency_plot, t2, ncol = 2,
 
 ```
 
-The tiles above plot the frequency of the Most Active Volcano in each VEI Category. Each tile represents an eruption.
+Tiles in above plot are used to visualize frequency with Most Active Volcano filtered in each VEI Category. Each tile represents an eruption. 
+
+Eruptions with VEI 2 occurred the most frequently, followed by volcanoes with VEI-3. For VEI-4 and above, volcanoes rarely erupted (or erupted prior to 1812) - Kelul-4 was actually an exceptional case as the other VEI-4 volcanoes occurred very seldom. 
+
+The gentler eruptions erupt more frequently while more explosive eruptions occur far less frequently. 
 
 
 ```{r, include=FALSE, warning=FALSE, message=FALSE, echo=FALSE}
@@ -1007,9 +1017,11 @@ a5num1k
 ```
 
 
-The general distribution of eruption duration is portrayed in the boxplot, in accordance with VEI level of eruptions. It is clear that eruptions for all VEI levels mostly last less than 500 days (excluding outliers). Yet eruptions with VEI level 3 tend to last longer than all other levels with the median of 105.5 days and the 3rd quartile of 592.5 days. 
+The general distribution of eruption duration is portrayed in the box plot (since outliers are removed in the box plot for better visualisation, a few values are inconsistent with the table above), in accordance with VEI level of eruptions. It is clear that eruptions for all VEI levels mostly last less than 500 days (excluding outliers). Yet eruptions with VEI level 3 tend to last longer than all other levels with the median of 105.5 days and the 3rd quartile of 592.5 days. 
 For the lowest VEI level of 0, its minimum (0 days) and Q3 (94 days) durations are the shortest, followed by its Q1 (1.5 days) and median (14 days) as the second lowest ones among 6 levels. Nevertheless, its maximum duration (2774 days) exceeds that of VEI level 5 (2406 days) and 6 (154 days).
+
 For the highest VEI level of 6, even though its minimum duration (18 days) is the highest compared with all other levels, the remaining figures of five-number summary did not significantly differentiate itself against other levels. Surprisingly, the maximum duration (154 days) of VEI level 6 is the lowest compared to all levels.
+
 
 
 ```{r jfa1, warning=TRUE, echo=FALSE, fig.align="center", fig.height=8, fig.width=14}
@@ -1033,7 +1045,7 @@ a2 <- vei_du %>%
   lm(duration ~ ., data = .)
 ```
 
-Pursuing this further, a goodness of fit measure is conducted to closely examine the relationship between VEI and duration. It can be seen that both values for r-square and adjusted r-squared are considered low where even converting them into percentage, they merely hold 1.625% and 1.565% respectively. This implies that only 1.625% of variance in duration can be explained by VEI level if a regression model is fitted, thus concluding the insignificant role of VEI in determining duration.
+Pursuing this further, a goodness of fit measure is conducted to closely examine the relationship between VEI and duration. It can be seen that both values for r-square and adjusted r-squared are considered low where even converting them into percentage, they merely hold 1.626% and 1.565% respectively. This implies that only 1.626% of variance in duration can be explained by VEI level if a regression model is fitted, thus concluding the insignificant role of VEI in determining duration.
 
 ```{r}
 alm <- ggplot(vei_du, aes(x = vei, y = duration)) +
@@ -1070,6 +1082,7 @@ ajoin3 <- a3 %>%
 The figure first orders the volcano eruptions with long duration ( >365 days) by their tectonic settings. Subduction zone / Continental crust ( >25km) dominates among all tectonic settings with most long duration eruptions both intuitively and proportionally - 90 long duration eruptions, accounting for 58.824% compared with others. Followed by Subduction zone / Continental crust ( >25 km) is Subduction zone / Oceanic crust ( <15km), yet a large gap between them is displayed. Particularly, 14 long duration eruptions occur on Subduction zone / Oceanic crust ( <15km), resulting with 9.15%. The remaining tectonic settings have very close figures, as well as proportion, having Intraplate / Intermediate crust (15-25 km) be the one with least long duration eruptions.
 In the same way, the number of short duration ( <30 days) eruptions for each tectonic settins is exhibited below. A similarity between this plot and the above one for long duration eruptions is that Subduction zone / Continental crust ( >25 km) and Intraplate / Intermediate crust (15-25 km) still remain in the same position, in this case - short duration eruption. Some variation emerges within the middle range of the order. For instance, there are only 7 long duration eruptions (4.575%) on Rift zone / Oceanic crust ( <15km), however the number of short duration eruptions rises to 30, accounting for 10.067% among all tectonic settings. 
 Moreover, comparing the length of the bars, it is apparent that every number from long duration eruptions for all tectonic settings increase when it comes to short duration. Hence, short duration eruptions occur more frequently than the long ones.
+
 
 
 ```{r jfa2, include=FALSE, message=FALSE, warning=FALSE, echo=FALSE}  
@@ -1124,7 +1137,7 @@ grid.arrange(altectplot, astectplot)
 
 ### World map of long and short duration eruption
 
-The map plots the locations of the volcanoes, categorised by their duration of eruptions. It can be easily observed that volcanoes with short duration eruptions are more concentrated, so are more likely to form into a "line" shape. On the other hand volcanoes with long durations seem to be more dispersed. Looking them as a whole, volcanoes are mainly located in coastline areas.
+The map plots the locations of the volcanoes, categorised by their duration of eruptions. It can be easily observed that volcanoes with short duration eruptions are more concentrated, so are more likely to form into a "line" shape. On the other hand volcanoes with long durations seem to be more dispersed. Looking at them as a whole, volcanoes are mainly located in coastline areas.
 
 ```{r jma1, message=FALSE, echo=FALSE, eval = TRUE}
 a5 <- rbind(a3, a4)
@@ -1218,7 +1231,8 @@ bmean0 <- b0 %>%
 ```
 
 ### Which tectonic settings have high or low frequency of eruptions?
-As shown in the figure, the tectonic settings with the record of at least two or more volcano eruptions within one year. Out of 10 tectonic settings recorded (NAs excluded), only 6 of them are listed under this condition. Tectonic settings with both long and short duration eruptions have all been listed here in regards with high frequency. Subduction zone / Continental crust ( >25km) is again positioned with the most times (21 times) of eruptions of high frequency, but this time followed by Intraplate / Oceanic crust ( <15km), where only 7 high and 15 short duration eruptions are marked. Rift zone / Oceanic crust ( <15km), placing with the least eruptions of high frequency, actually has 30 times of short duration eruptions which is considered quite high.
+The figure depicts the tectonic settings with the record of at least two or more volcano eruptions within one year. Out of 10 tectonic settings recorded (NAs excluded), only 6 of them are listed under this condition. Tectonic settings with both long and short duration eruptions have all been listed here in regards with high frequency. Subduction zone / Continental crust ( >25km) is again positioned with the most times (21 times) of eruptions of high frequency, but this time followed by Intraplate / Oceanic crust ( <15km), where only 7 high and 15 short duration eruptions are marked. Rift zone / Oceanic crust ( <15km), placing with the least eruptions of high frequency, actually has 30 times of short duration eruptions which is considered quite high.
+
 
 ```{r jfb1, message=FALSE, warning=FALSE, echo=FALSE, fig.height=8, fig.align="center", fig.width=12}
 # keep
@@ -1255,6 +1269,8 @@ Reflecting on one of the findings, as the tectonic setting where most longer ( >
 Overall, with the highest VEI average (2.667), neither long duration eruptions ( >365 days), nor high frequency (≥ 2 eruptions in 1 year) eruptions are found in Rift zone / Intermediate crust (15-25 km), while only one eruption of short duration ( <30 days) occurs in this setting.
 On the opposite, with the lowest ranking for average VEI (0.923), volcanoes on the Intraplate / Oceanic crust ( <15 km) don't tend to erupt with long duration ( >365 days) where it’s long duration eruption only holds 4.575%, compared with other tectonic settings. Nevertheless, it has a greater percentage for both short duration (5.033%) and high frequency (9.677%) eruptions.
 
+
+
 ```{r jtt1, echo=FALSE, message=FALSE}
 tect_avg <- kable(hl_tect, caption = "Average VEI level for each tectonic setting") %>% kable_styling(bootstrap_options = c("striped", "hover"))
 
@@ -1265,7 +1281,7 @@ tect_avg
 # References
 
 
-```{r}
+```{r, include = FALSE}
 citation("tidyverse")
 citation("lubridate")
 citation("broom")
@@ -1342,6 +1358,7 @@ Sigurdsson, H., Houghton, B., McNutt, S., Rymer, H., & Stix, J. (Eds.). (2015). 
 Simon Garnier (2018). viridis: Default Color Maps from 'matplotlib'. R
   package version 0.5.1. https://CRAN.R-project.org/package=viridis
   
+  Tectonic Plate Boundaries. (2020). Retrieved 28 August 2020, from https://www.kaggle.com/cwthompson/tectonic-plate-boundaries
 
 Tim Appelhans, Florian Detsch, Christoph Reudenbach and Stefan
   Woellauer (2020). mapview: Interactive Viewing of Spatial Data in R. R
@@ -1362,6 +1379,8 @@ Yihui Xie (2014) knitr: A Comprehensive Tool for Reproducible Research
   in R. In Victoria Stodden, Friedrich Leisch and Roger D. Peng, editors,
   Implementing Reproducible Computational Research. Chapman and Hall/CRC.
   ISBN 978-1466561595  
+  
+
   
 
   
