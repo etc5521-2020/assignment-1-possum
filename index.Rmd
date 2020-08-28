@@ -116,8 +116,38 @@ volcano_erupted <- volcano_erupted %>%
   ungroup()
 ```
 
+```{r volcano-types-eruptions, fig.align="center"}
+# No. of eruptions by Volcano tyepes
+volcano_erupted %>% 
+  group_by(primary_volcano_type) %>% 
+  summarize(no_of_eruptions = sum(n)) %>% 
+  arrange(-no_of_eruptions) %>% 
+  ggplot() +
+  geom_col(aes(x = reorder(primary_volcano_type, -no_of_eruptions),
+               y = no_of_eruptions),
+           width = 0.1,
+           space = 0.1,
+           fill = "orange") +
+  labs(x = "Primary Volcano Types",
+       y = "Number of eruptions") +
+  ggtitle("Number of eruptions for Primary Volcano Types") +
+  theme_minimal() +
+  theme(axis.text = element_text(colour = "white"),
+        axis.title = element_text(colour = "white")) +
+  theme(panel.background = element_rect(fill = "grey20"),
+        plot.background = element_rect(fill = "grey20")) +
+  theme(legend.position = "right",
+        legend.background = element_rect(fill = "grey20"),
+        legend.text = element_text(colour = "white"),
+        legend.title = element_text(colour = "white")) + 
+  theme(plot.title = element_text(size = 20, face = "bold", colour = "orange"),
+        plot.subtitle = element_text(size = 16, colour = "orange")) 
+  
+```
 
-```{r plates}
+There are 3 main types of Active Volcanoes (erupted before) namely Stratovolcano, Caldera and Shield. We decided to label the many others as others. 
+
+```{r plates, include = FALSE}
 plate <- unique(rof$plate) %>% 
   tibble(plate = .)
 
@@ -205,58 +235,67 @@ world %>%
   
 ```
 
-We first plotted the world map of Active Volcanoes(erupted before) with tectonic plate boundaries overlaid. 
+We then plotted the world map of Active Volcanoes with tectonic plate boundaries overlaid. 
 
 We found that most of the volcanoes lie along the Pacific Ocean tracing the boundaries of tectonic plates. We later found that was dubbed the [Ring of Fire(or Circum-Pacific Belt)](https://www.nationalgeographic.org/encyclopedia/ring-fire/) . This path is approximately 40,000km long and holds 75% of the World's Volcanoes are situated and 90% of active ones! The abundance of volcanoes are explained by significant tectonic plates in the area since volcanoes are formed by either converging or diverging tectonic boundaries, creating cracks in earth. 
 
-To achieve the map, we could not just plot the tectonic boundaries as the polygons stretch across the world map (looking like they are at opposite ends of the world when in fact they are side by side since the globe is round while ggplot is 2D). So, we split the tectonic plates at the prime meridian (x-intercept where long = 0) - was helped by a helpful member at [StackOverflow](https://stackoverflow.com/questions/63591697/how-to-split-tectonic-plate-boundary-polygon-in-a-way-to-prevent-line-across-the/63593236?noredirect=1#comment112479435_63593236)
+To achieve the map, we could not just plot the tectonic boundaries as the polygons stretch across the world map (looking like they are at opposite ends of the world when in fact they are side by side since the globe is round while ggplot is 2D). So, we split the tectonic plates at the prime meridian (x-intercept where long = 0) - was assisted by a helpful member at [StackOverflow](https://stackoverflow.com/questions/63591697/how-to-split-tectonic-plate-boundary-polygon-in-a-way-to-prevent-line-across-the/63593236?noredirect=1#comment112479435_63593236)
 
 ```{r ring-of-fire, fig.align="center", fig.height=8, fig.width=14}
-# fix longitude; recenter coordinates to center around ring of fire
+# ---- fix longitude; recenter coordinates to center around ring of fire
 volcano_erupted <- volcano_erupted %>% 
   mutate(long_fixed = ifelse(longitude < 0, yes = longitude + 360, no = longitude)) %>% 
   filter(long_fixed > 60 & long_fixed < 320,
          latitude > -50) 
   
-# plot world map with Pacific Ocean in the middle 
+# --- plot world map with Pacific Ocean in the middle 
 world2 <- map_data("world2") %>% 
   # filter to coordinates within ring of fire
   filter(long > 60 & long < 320)
 
-# plot prominent countries coordinates
+# --- plot prominent countries coordinates
 countries_rof_coord <- tibble(id = c("Australia", "New Zealand", "South America", "North America", "Japan"), long = c(130, 174, 310, 265, 140), lat = c(-25, -40, -20, 50, 33))
 
 ggplot() +
+  # plot world map
   geom_polygon(data = world2,
                aes(x = long, y = lat, group = group),
                fill = "dark grey") +
+  # plot active volcanoes points
   geom_point(data = volcano_erupted,
-               aes(x = long_fixed, y = latitude),
+               aes(x = long_fixed, y = latitude,
+                   size = n),
              colour = "red") +
+  scale_size(range = c(2,5), 
+             breaks = c(10, 50, 100, 180),
+             name = "Number of eruptions") +
   geom_text(data = countries_rof_coord,
             aes(x = long, y = lat, label = id),
             colour = "blue") +
   ggtitle("The Ring of Fire") +
   labs(subtitle = "Pacific Rim Volcanoes with documented eruptions") +
+  theme_map() +
   annotate("text", x = 200, y = 30,
            label = "Ring of Fire",
            colour = "pink",
            family = "Palatino",
            size = 9) +
   theme(panel.background = element_rect(fill = "grey20"),
-        plot.background = element_rect(fill = "grey20")) +
+        plot.background = element_rect(fill = "grey20"),
+        legend.box.background = element_rect(fill = "grey20"),
+        legend.text = element_text(colour = "white"),
+        legend.title = element_text(colour = "white")) +
   theme(legend.position = "right",
-        legend.background = element_rect(colour = "grey20")) + 
+        legend.background = element_rect(fill = "grey20")) + 
   theme(plot.title = element_text(size = 20, face = "bold", colour = "orange"),
         plot.subtitle = element_text(size = 16, colour = "orange"))
 ```
 
-Above shows the plot zoomed into the Ring Of Fire with volcanoes running along the 
-boundaries. 
+This map zoomed into the Ring Of Fire with volcanoes running along the boundaries. As we can see, the volcanoes here are has more eruptions relatively speaking. 
 
 ## The interaction between volcanoes and humans - How worried should you be about volcanoes?
 
-### population around volcanoes
+### population around volcanoes' vicinity
 
 ```{r plotpop-exploration, include = FALSE}
 volcano_erupted %>% 
@@ -537,10 +576,43 @@ grid.arrange(triangle, pop_plot, ncol = 2,
 
 ```
 
-There is no fixed safety risk zones as volcanoes are unpredictable. However, it is said around 1km for small/medium sized eruptions(VEI = 1-2) is relatively safe as long as volcanic projectiles do not fall in that area. Given this, most volcanoes are less than 5km from a population of people.
+There is no fixed safety risk zones as volcanoes are unpredictable. However, it is said around 1km for small/medium sized eruptions(VEI = 1-2) is relatively safe as long as volcanic projectiles do not fall in that area. Given this, most volcanoes are less than 5km from a population of people. Above figure was inspired by [Sil Aarts'](https://twitter.com/sil_aarts/status/1260156344319041537/photo/1) visualization.
 
 ### World map with number of eruptions in each country
-```{r}
+
+```{r volcano-erupted-countries, fig.height=8, fig.width=14}
+volcano_erupted %>% 
+  arrange(-n) %>% 
+  head(10) %>% 
+  ggplot() +
+  geom_col(aes(x = reorder(volcano, -n),
+               y  = n),
+           width = 0.1,
+           space = 0.1,
+           fill = "orange") +
+  labs(x = "Volcano",
+       y = "Number of eruptions") +
+  ggtitle("Top 10 Most Active Volcanoes") +
+  theme_minimal() +
+  theme(axis.text = element_text(colour = "white",
+                                 size = 12),
+        axis.text.x = element_text(angle = 45),
+        axis.title = element_text(colour = "white",
+                                  size = 18)) +
+  theme(panel.background = element_rect(fill = "grey20"),
+        plot.background = element_rect(fill = "grey20")) +
+  theme(legend.position = "right",
+        legend.background = element_rect(fill = "grey20"),
+        legend.text = element_text(colour = "white"),
+        legend.title = element_text(colour = "white")) + 
+  theme(plot.title = element_text(size = 20, face = "bold", colour = "orange"),
+        plot.subtitle = element_text(size = 16, colour = "orange")) 
+  
+  
+```
+
+
+```{r volcano-countries, fig.height=8, fig.width=14}
 # clean volcano$country to match world data set
 volcano_country <- volcano_erupted %>% 
   mutate(country = case_when(
@@ -584,31 +656,67 @@ volcano_country_join %>%
   geom_map(map = volcano_country_join,
            aes(x = long, y = lat, map_id = region,
                fill = n)) +
+  scale_fill_gradient(low = "dark grey",
+                      high = "#ff8000",
+                      name = "number of eruptions") +
   # plot dot points representing active volcanoes
   geom_point(data = volcano_erupted,
              aes(x = longitude, y = latitude,
                  size = population_within_5_km),
                  colour = "red") +
-  theme_map() +
-  theme(panel.background = element_rect(fill = "grey20"),
-        plot.background = element_rect(fill = "grey20")) +
+  scale_size(range = c(2,7),
+            name = "population within 5km",
+            breaks = c(100, 1000, 10000, 100000, 1000000, 40640105),
+            labels = c("<=100", "101-1000", "1001,10,000", "10,000-100,000", "100,001-1000,000", ">100,000")) +
+  ggtitle("World Map with countries experiencing most eruptions") +
+   theme(panel.background = element_rect(fill = "grey20"),
+        plot.background = element_rect(fill = "grey20"),
+        legend.box.background = element_rect(fill = "grey20"),
+        legend.text = element_text(colour = "white"),
+        legend.title = element_text(colour = "white")) +
   theme(legend.position = "right",
-        legend.background = element_rect(colour = "grey20")) + 
-  theme(plot.title = element_text(size = 20, face = "bold", colour = "orange"),
+        legend.background = element_rect(fill = "grey20")) +
+  theme(plot.title = element_text(size = 25, face = "bold", colour = "orange"),
         plot.subtitle = element_text(size = 16, colour = "orange")) +
-  guides(fill = FALSE,
-         size = FALSE)
-  
+  annotate("label", x = -100, y = 40,
+           label = "North America",
+           colour = "blue",
+           family = "Palatino",
+           size = 4) +
+  annotate("label", x = 140, y = 33,
+           label = "Japan",
+           colour = "blue",
+           family = "Palatino",
+           size = 4) +
+  annotate("label", x = 105, y = -10,
+           label = "Indonesia",
+           colour = "blue",
+           family = "Palatino",
+           size = 4) +
+  annotate("label", x = -80, y = -35,
+           label = "Chile",
+           colour = "blue",
+           family = "Palatino",
+           size = 4) +
+  annotate("label", x = 130, y = 60,
+           label = "Russia",
+           colour = "blue",
+           family = "Palatino",
+           size = 4)
 ```
 
 Above shows plot with dots filled with number of eruptions in each country. and larger dot sizes represent the number of population in the vicinity. 
 
 
-### What is the probabability of a volcano erupting in each VEI category after 1812?
+### How likely will a volcano erupting in each VEI category after 1812?
 
-We filtered the data set to after 1812 where the last observed VEI 7 was recorded at Mount Tambora.
+VEI measures the explosiveness of volcanic eruptions. It is determined by the volume of materials thrown out(e.g. pyroclastic flow like smoke, ash etc.), eruption cloud height and qualitative observations. As qualitatlively described using terms ranging from "gentle" to "mega-colossal" [[Wikipedia](https://en.wikipedia.org/wiki/Volcanic_Explosivity_Index)]. For example, VEI of 0 given for non-explosive eruptions ($<10,000m^3$ of fragmental material produced by eruption called tephra). While VEI of 8 can eject $1\times10^12m^3$ of tephra.
 
-```{r}
+Theoretically, VEI is ranges from 0 to infinity. VEI scale is on a log. Therefore each interval of increase (1) in VEI indicate an eruption 10x more powerful. Looking back at the last 132 million years, there were only 40 eruptions recorded with VEI-8 magnitude and 10 eruptions of VEI-7 in last 10,000 years.
+
+We filtered the data set to after 1812 where the last observed VEI 7 was recorded at Mount Tambora. 
+
+```{r eruptions-1812-wrangling}
 # filter eruptions; to after 1812: eruption of Mount Tambora
 eruptions_1812 <- eruptions %>% 
   filter(start_year >= 1812) 
@@ -622,7 +730,7 @@ eruptions_1812 <- eruptions_1812 %>%
 ```
 
 
-```{r}
+```{r eruptions-1812-pdf}
 library(ggridges)
 eruptions_1812_pdf <- eruptions_1812 %>% 
   filter(!is.na(vei)) %>% 
@@ -630,7 +738,7 @@ eruptions_1812_pdf <- eruptions_1812 %>%
   mutate(no_of_eruptions = n(),
          vei = factor(vei, levels = c(0, 1, 2,3 ,4, 5, 6, 7))) 
 
-eruptions_1812_pdf %>% 
+eruptions_1812_pdf <- eruptions_1812_pdf %>% 
   ggplot() +
   stat_density_ridges(aes(y = factor(vei, levels = c(0,1,2,3,4,5,6,7)),
                           x = no_of_eruptions,
@@ -648,29 +756,51 @@ eruptions_1812_pdf %>%
   ylab("VEI") +
   xlab("number of eruptions") +
   ggtitle("Probability density function of eruptions in each VEI category")
-
-eruptions_1812_pdf %>% 
-  group_by(vei) %>% 
-  summarise(min = min(no_of_eruptions),
-            `1Q` = quantile(no_of_eruptions, 0.25),
-            median = median(no_of_eruptions),
-            `3Q` = quantile(no_of_eruptions, 0.75),
-            max = max(no_of_eruptions)) %>% 
-  kable() %>% 
-  kable_styling(bootstrap_options = c("striped", "hover"))
 ```
-- The density ridgeline plots above probability of an eruption occuring in each VEI category
-  - notably, VEI 4 upwards are pretty rare. 
 
+```{r eruptions-1812-nsum}
+# numerical summary
+eruptions_1812_nsum <- eruptions_1812 %>% 
+  ungroup() %>% 
+  group_by(vei) %>% 
+  count() 
 
+eruptions_1812_nsum <- eruptions_1812_nsum %>% 
+  ungroup() %>% 
+  filter(!is.na(vei)) %>% 
+  mutate(total = sum(n),
+         cumsum = cumsum(n)) %>% 
+  mutate(percent = round(100*cumsum/total,2)) %>% 
+  mutate(percent_change = round(percent - lag(percent),2)) %>% 
+  select(vei, percent, percent_change) 
+
+# concatenate < VEI
+eruptions_1812_nsum$vei <- str_c("< VEI-", eruptions_1812_nsum$vei )
+
+eruptions_1812_nsum <- eruptions_1812_nsum
+```
+
+```{r plot-nsum, fig.align="center", fig.width = 13}
+# change table to tableGrob
+t1 <- tableGrob(eruptions_1812_nsum, theme=ttheme_minimal(), rows=NULL)
+
+grid.arrange(eruptions_1812_pdf, t1, ncol = 2,
+             widths = c(80,20),
+             padding = 2)
+```
+
+The density plots above shows that likelihood of a VEI 4 and above is very unlikely (all less than 10%). In fact, almost 98% of all volcanoes have less than VEI-3. 
 
 
 ### How Frequent does volcanoes erupt?
-```{r}
+```{r, eval = FALSE}
 # Plot all volcanoes that erupted more than once
 eruptions_1812 %>% 
+  ungroup() %>% 
   # filter volcanoes; with only 1 eruption i.e. NA for lag_year variable
   filter(!is.na(lag_year)) %>% 
+  group_by(vei) %>% 
+  arrange(-n) %>% 
   ggplot() +
   geom_tile(aes(x = volcano_name,
                  y = lag_year),
@@ -678,12 +808,34 @@ eruptions_1812 %>%
             size = 5) +
   coord_flip() +
   # facet by VEI
-  facet_wrap(~vei)
-```
+  facet_wrap(~vei, ncol = 1)
+
+# filter top 3 volcanoes with highest frequency
+volcano_frequent <- eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
+  ungroup() %>% 
+  group_by(volcano_name, vei) %>%
+  mutate(frequency = n()) %>% 
+  group_by(vei) %>% 
+  arrange(vei,-frequency)
+  
+  ?top_n
+
+volcano_frequent$lag_year <- as.integer(volcano_frequent$lag_year)
+
+volcano_frequent$volcano <- as.factor(str_c(volcano_frequent$volcano_name, "-", volcano_frequent$vei))
+
+volcano_frequent %>% 
+  filter(vei == 4) %>% 
+  ggplot() +
+  geom_point(aes(x = lag_year,
+                y = as.factor(volcano))) +
+  scale_x_continuous(breaks = seq(from = 1812, to = 2020, by =1))
+  
+  ?slice_max
+  
 
 
-```{r}
-# plot top 10 volcanoes with maximum frequency
 ```
 
 
