@@ -108,9 +108,9 @@ a5num1 <- list2DF(a1) %>%
 a5num1k <- kable(a5num1, caption = "Five number summary and mean of duration for each VEI")
 # keep
 abox <- ggplot(vei_du, aes(x = as.factor(vei), y = duration, color = vei)) +
-  geom_boxplot() +
+  geom_boxplot(outlier.shape = NA) +
   coord_flip() +
-  scale_y_continuous(limits=c(-100,10000), breaks=seq(0,10000,5000), expand = c(0, 0)) +
+  scale_y_continuous(limits=c(-100,2000), breaks=seq(0,2000,500), expand = c(0, 0)) +
   labs(title = "Five number summary distribtuion for VEI level from 0 to 6",
        x = "VEI",
        y = "Eruption duration (Days)")
