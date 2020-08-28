@@ -1,0 +1,505 @@
+---
+title: "Data Exploration"
+author: "Brenwin"
+date: "14/08/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(gridExtra)
+library(sf)
+
+# read in data
+volcano <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv')
+eruptions <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/eruptions.csv')
+events <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/events.csv')
+tree_rings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/tree_rings.csv')
+sulfur <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/sulfur.csv')
+
+rof <- read_csv("all.csv")
+```
+
+# Questions
+- Primary:
+  Does volcanoes with different VEI have specific characteristics?
+
+- Secondary:
+  How worried should you be about a volcano eruption?
+--> generally most volcanoes that erupt are not near populations  
+--> high VEI eruptions; don't occur frequently
+
+Which tectonic settings have higher or lower VEI and how this relates to the duration of eruption?
+--> most erupting volcanoes (regardless of duration) share a common tectonic setting
+
+*which tectonic settings have higher/lower VEI?
+
+What is the ideal setting for a volcano to form?
+--> most of the volcanoes that erupt lie on ring of fire  
+-> which are not situated near populations
+
+--> order of VEI isn't that significant in explaining duration or frequency of eruption
+
+
+
+# ========== Volcano Data set
+
+## About
+- Gives information of 958 volcanoes such as
+  - major/minor rocks// tectonic settings
+  - volcano_name// country// regions// lat// long
+  - population within 5,10,30,100km
+
+## what; types of Volcanoes
+```{r}
+#types of volcanoes
+volcano %>% 
+  count(primary_volcano_type) 
+```
+
+## Categorize volcanoes into 4 main types 
+```{r}
+volcano_types <- volcano %>% 
+  # categorize volcanoes into 4 main types
+  mutate(primary_volcano_type = case_when(
+    str_detect(primary_volcano_type, "Stratovolcano") ~ "Stratovolcano",
+    str_detect(primary_volcano_type, "Shield") ~ "Shield",
+    str_detect(primary_volcano_type, "Caldera") ~ "Caldera",
+    TRUE ~ "Other"
+  ))
+
+unique(volcano_types$primary_volcano_type)
+```
+- 4 Main types of Volcanoes
+  - Shield
+  - Stratovolcano
+  - Caldera
+  - Other
+
+
+## Recategorize volcanoes' elevation
+
+### volcanoes' elevation? What is volcano average elevation
+```{r}
+# average elevation of volcanoes
+volcano %>% 
+  ggplot() +
+  geom_histogram(aes(x = elevation),
+                 binwidth = 500,
+                 fill = "red",
+                 colour = "black") +
+  xlim(range(volcano$elevation)) +
+  coord_flip()
+
+# by volcano types
+volcano_types %>% 
+  ggplot(aes(x = fct_reorder(primary_volcano_type, elevation),
+             y = elevation,
+             fill = fct_reorder(primary_volcano_type, elevation))) +
+  geom_boxplot() +
+  coord_flip() +
+  theme(legend.position = "none") +
+  geom_point(data = volcano_types,
+             aes(x = primary_volcano_type,
+             y = elevation),
+             position = "jitter",
+             alpha = 0.4) # make points less clustered in horizontal line (overplotted)
+```
+
+- Elevation of volcanoes; mostly around 1,250m - 1,750m.
+
+### Which volcanoes have the highest elevation?
+```{r}
+volcano_elevation <- volcano_types %>% 
+  arrange(-elevation) %>% 
+  select(volcano_name, country, primary_volcano_type, elevation) %>% 
+  # concatenate volcano_name and country
+  mutate(volcano = str_c(volcano_name, country, sep = " -"),
+         # keep unused variable i.e. volcano type 
+         .keep = "unused") %>% 
+  # rearrange column in data frame
+  .[,c(3, 1, 2)] 
+
+volcano_elevation
+```
+
+# ========== Eruption Data set
+
+- One row in the eruptions data set represents a case of volcano eruption
+
+## what; evidence_method_dating
+
+```{r}
+unique(eruptions$evidence_method_dating)
+
+eruptions %>% 
+  count(evidence_method_dating)
+```
+
+
+## What is the date range of this data set?
+```{r}
+eruptions %>% 
+  summarize(range(start_year, na.rm = TRUE))
+```
+- This data set dates back all the way to -11,345 years ago to the present.
+  - dubbed the Holocene period. i.e. time since the end of the last "ice age" 
+
+
+## How worried should you be about volcano eruptions?
+
+- Explositivity of volcanoes; measured through VEI (volcano explositivity index)
+  - theoretically: scale 0 to infinity
+  - largest VEI measured: 8
+  - most recent VEI 7 eruption was observed is in 1815: The eruption at Mount Tambora
+
+
+## How many times each volcano erupted? *note: `volcano_erupted` data set include only volcanoes that erupted
+```{r}
+# join only volcanoes that erupted
+volcano_erupted <-inner_join(volcano_types, eruptions) %>%
+  # select relevant variables
+  select(volcano_name, vei, start_year, end_year, last_eruption_year, primary_volcano_type, country, latitude, longitude, elevation, evidence_category, population_within_5_km, population_within_10_km, population_within_30_km, population_within_100_km) %>% 
+# concatenate country & volcano name
+  mutate(volcano = str_c(volcano_name, country, sep = " -"), .keep = "all") 
+
+# summarize volcano erupted; keeping all columns
+volcano_erupted <- volcano_erupted %>% 
+  group_by(volcano) %>%
+  # find count (i.e. no. of times volcano erupted)
+  mutate(n = n()) %>%  
+  distinct(volcano, 
+           .keep_all = TRUE) %>% 
+  ungroup()
+```
+
+- There were total of 11,1178 eruptions during this year. (roughly about 1 per year!!!)
+  - Eruptions are caused by 688 volcanoes
+
+```{r}
+volcano_erupted %>% 
+  summarize(mean_5km = summary(population_within_5_km),
+            mean_10km = summary(population_within_10_km),
+            mean_30km = summary(population_within_30_km),
+            mean_100km = summary(population_within_100_km))
+
+volcano_population <- volcano_erupted %>% 
+  mutate(no_of_people_5km = case_when(population_within_5_km <= 100 ~ "<= 100", 
+                                  population_within_5_km >= 101 & population_within_5_km <= 1000 ~ "101-1,000",
+                                  population_within_5_km > 1000 & population_within_5_km <= 10000 ~ "1,001-10,000",
+                                  population_within_5_km > 10000 & population_within_5_km <= 100000 ~ "10,000-100,000",
+                                  population_within_5_km > 100000 & population_within_5_km <= 1000000 ~ "100,001-1,000,000",
+                                  population_within_5_km > 1000000 ~ "> 1,000,000")) 
+
+volcano_population <- volcano_population %>% 
+  mutate(no_of_people_10km = case_when(population_within_10_km <= 100 ~ "<= 100", 
+                                  population_within_10_km >= 101 & population_within_10_km <= 1000 ~ "101-1,000",
+                                  population_within_10_km > 1000 & population_within_10_km <= 10000 ~ "1,001-10,000",
+                                  population_within_10_km > 10000 & population_within_10_km <= 100000 ~ "10,000-100,000",
+                                  population_within_10_km > 100000 & population_within_10_km <= 1000000 ~ "100,001-1,000,000",
+                                  population_within_10_km > 1000000 ~ "> 1,000,000")) 
+
+
+volcano_population <- volcano_population %>% 
+  mutate(no_of_people_30km = case_when(population_within_30_km <= 100 ~ "<= 100", 
+                                  population_within_30_km >= 101 & population_within_30_km <= 1000 ~ "101-1,000",
+                                  population_within_30_km > 1000 & population_within_30_km <= 10000 ~ "1,001-10,000",
+                                  population_within_30_km > 10000 & population_within_30_km <= 100000 ~ "10,000-100,000",
+                                  population_within_30_km > 100000 & population_within_30_km <= 1000000 ~ "100,001-1,000,000",
+                                  population_within_30_km > 1000000 ~ "> 1,000,000")) 
+
+volcano_population <- volcano_population %>% 
+  mutate(no_of_people_100km = case_when(population_within_100_km <= 100 ~ "<= 100", 
+                                  population_within_100_km >= 101 & population_within_100_km <= 1000 ~ "101-1,000",
+                                  population_within_100_km > 1000 & population_within_100_km <= 10000 ~ "1,001-10,000",
+                                  population_within_100_km > 10000 & population_within_100_km <= 100000 ~ "10,000-100,000",
+                                  population_within_100_km > 100000 & population_within_100_km <= 1000000 ~ "100,001-1,000,000",
+                                  population_within_100_km > 1000000 ~ "> 1,000,000")) 
+
+volcano_population_long <- volcano_population %>% 
+  pivot_longer(cols = no_of_people_5km:no_of_people_100km,
+               names_to = "category",
+               values_to = "no_of_people") %>% 
+  mutate(no_of_people = factor(no_of_people, levels = c("<= 100", "101-1,000", "1,001-10,000", "10,000-100,000", "100,001-1,000,000", "> 1,000,000")))
+
+volcano_population_long %>% 
+  group_by(category) %>% 
+  ggplot() +
+  geom_bar(aes(x = as.factor(no_of_people))) +
+  facet_wrap(~category, ncol = 1) +
+  coord_flip() 
+```
+
+### Plot world map of countries fill with highest no. of volcano eruptions
+```{r}
+# clean volcano$country to match world data set
+volcano_country <- volcano_erupted %>% 
+  mutate(country = case_when(
+    country == "Armenia-Azerbaijan" ~ "Armenia",
+    country == "Burma (Myanmar)" ~ "Burma",
+    country %in% c("Chile-Argentina","Chile-Bolivia", "Chile-Peru") ~ "Chile",
+    country == "China-North Korea" ~ "China",
+    country == "Colombia-Ecuador" ~ "Colombia",
+    country %in% c("DR Congo", "DR Congo-Rwanda") ~ "Democratic Republic of the Congo",
+    country == "El Salvador-Guatemala" ~ "El Salvador",
+    country == "Eritrea-Djibouti" ~ "Eritrea",
+    country %in% c("Ethiopia-Djibouti", "Ethiopia-Kenya") ~ "Ethiopia",
+    country == "Guatemala-El Salvador" ~ "Guatemala",
+    country == "Japan - administered by Russia" ~ "Japan",
+    country == "Mexico-Guatemala" ~ "Mexico",
+    country == "North Korea-South Korea" ~ "North Korea",
+    country == "Saint Kitts and Nevis" ~ "Saint Kitts",
+    country == "Syria-Jordan-Saudi Arabia" ~ "Syria",
+    country == "Saint Vincent and the Grenadines" ~ "Saint Vincent",
+    country == "Uganda-Rwanda" ~ "Uganda",
+    country == "United Kingdom" ~ "UK",
+    country == "United States" ~ "USA",
+    TRUE ~ country
+  )) 
+
+volcano_country_count <- volcano_country %>% 
+  group_by(country) %>% 
+  count() %>% 
+  ungroup()
+
+world <- map_data("world")
+
+volcano_country_join <- left_join(world, volcano_country_count,
+          by = c("region" = "country")) %>% 
+  # replace n = NA to 0
+  mutate(n = ifelse(is.na(n), 0, n))
+
+# plot world map; fill number of volcanoes that erupt in each country 
+volcano_country_join %>% 
+  ggplot() +
+  geom_map(map = volcano_country_join,
+           aes(x = long, y = lat, map_id = region,
+               fill = n)) +
+  # plot dot points representing active volcanoes
+  geom_point(data = volcano_erupted,
+             aes(x = longitude, y = latitude,
+                 size = population_within_5_km),
+                 colour = "red")
+```
+
+
+
+## which countries with most volcanoes?
+```{r}
+volcano %>% 
+  count(country) %>% 
+  arrange(-n) %>% 
+  head(10)
+```
+
+## what about Australia?
+```{r}
+volcano %>% 
+  filter(country == "Australia")
+```
+- Australia has 2 volcanoes
+
+
+```{r}
+# filter eruptions; to after 1812: eruption of Mount Tambora
+eruptions_1812 <- eruptions %>% 
+  filter(start_year >= 1812) 
+
+# see lag; between last eruption to next
+eruptions_1812 <- eruptions_1812 %>% 
+  arrange(start_year, volcano_name) %>%  
+  group_by(volcano_name) %>% 
+  # find year between eruptions = year of eruption + (time between last and start of eruption)
+  mutate(lag_year = start_year + (lag(start_year) - start_year))
+
+# Plot all volcanoes that erupted more than once
+eruptions_1812 %>% 
+  # filter volcanoes; with only 1 eruption i.e. NA for lag_year variable
+  filter(!is.na(lag_year)) %>% 
+  ggplot() +
+  geom_tile(aes(x = volcano_name,
+                 y = lag_year),
+            fill = "red",
+            size = 5) +
+  coord_flip() +
+  # facet by VEI
+  facet_wrap(~vei)
+```
+
+## probability distribution function of volcano eruptions in each VEI
+```{r}
+library(ggridges)
+eruptions_1812_pdf <- eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
+  group_by(volcano_name, vei) %>% 
+  mutate(no_of_eruptions = n(),
+         vei = factor(vei, levels = c(0, 1, 2,3 ,4, 5, 6, 7))) 
+
+eruptions_1812_pdf %>% 
+  ggplot() +
+  stat_density_ridges(aes(y = factor(vei, levels = c(0,1,2,3,4,5,6,7)),
+                          x = no_of_eruptions,
+                          fill = vei),
+                      # colour median line & adjust size
+                      quantile_lines = TRUE,
+                      vline_color = "red",
+                      vline_size = 1.5,
+                      quantiles = 0.5,
+                      # add jittered points
+                      jittered_points = TRUE,
+                      alpha = 0.7,
+                      position = "raincloud") +
+  scale_x_continuous(breaks = seq(from = 0, to = 70, by = 5 )) +
+  ylab("VEI") +
+  xlab("number of eruptions") +
+  ggtitle("Probability density function of eruptions in each VEI category")
+
+eruptions_1812_pdf %>% 
+  group_by(vei) %>% 
+  summarise(min = min(no_of_eruptions),
+            `1Q` = quantile(no_of_eruptions, 0.25),
+            median = median(no_of_eruptions),
+            `3Q` = quantile(no_of_eruptions, 0.75),
+            max = max(no_of_eruptions)) %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
+  
+```
+
+- The density ridgeline plots above probability of an eruption occuring in each VEI category
+  - notably, VEI 4 upwards are pretty rare. 
+  
+
+
+
+
+# ========== World map
+
+
+### Plot a world map of where volcanoes erupt
+
+```{r}
+plate <- unique(rof$plate) %>% 
+  tibble(plate = .)
+
+# convert to sf object & split into 2 polygons (to prevent across dateline)
+plates <- map(.x = plate$plate,
+    .f = function(x){
+      st_polygon(x = list(as.matrix(rof %>% filter(plate == x) %>%  select(lon, lat)))) %>% 
+  st_wrap_dateline()
+    }) 
+
+# convert polygons back to dataframe
+plates2 <- lapply(seq_along(plates), 
+                 function(i) as.data.frame(plates[[i]][[1]]) %>% 
+                   mutate(group = i)) %>%
+  data.table::rbindlist() %>% 
+  rename(lon = V1, lat = V2)
+```
+
+```{r}
+# # process data for geom_polygon approach
+# plates_2 <- rof %>%
+#   
+#   # split into separate data frame for each plate
+#   split(.$plate) %>% 
+#   
+#   # convert to polygon & split along date line (as before)
+#   lapply(function(d) d %>% select(lon, lat) %>%
+#            as.matrix() %>%
+#            list() %>%
+#            st_polygon() %>% 
+#            st_wrap_dateline()) %>%
+#   
+#   # convert each plate back to data frame 
+#    lapply(function(d) lapply(seq_along(d),
+#                             function(i) as.data.frame(d[[i]][[1]]) %>%
+#                               rename(lon = V1, lat = V2) %>%
+#                               mutate(group = i)) %>%
+#            data.table::rbindlist())
+#   
+```
+
+
+```{r}
+# add continent coordinates
+continent_coord <- tibble(id = c("Africa", "Asia", "Europe", "North America", "Oceania", "South America"),
+                          long = c(15, 80, 20, -100, 150, -60),
+                          lat = c(15, 35, 50, 40, -25, -15),
+                          stringsAsFactors = F)
+
+# add ring of fire coordinates
+ring_of_fire <- tibble(id = c("Ring of Fire", "Ring of Fire"), 
+                    long = c(180, -180),
+                    lat = c(40, 40))
+
+# ----- plot world map
+world %>% 
+  ggplot() +
+  geom_map(map = world,
+           aes(x = long, y = lat,
+               map_id = region)) +
+  geom_point(data = volcano_erupted,
+             aes(x = longitude, y = latitude,
+                 shape = primary_volcano_type),
+                 colour = "red",
+                 size = 1.5) +
+  theme(legend.position = "bottom") +
+  geom_polygon(data = plates2,
+               aes(x = lon,
+                   y = lat,
+                   group = group),
+               fill = NA,
+               colour = "dark green",
+               size = 1.5) +
+  # add continent text
+  geom_text(data = continent_coord,
+            aes(x = long, 
+                y = lat,
+                label = id),
+            colour = "blue",
+            size = 5) +
+  geom_text(data = ring_of_fire,
+            aes(x = long, 
+                y = lat,
+                label = id),
+            colour = "red") +
+  # remove legends
+  guides(colour = FALSE,
+         size = FALSE,
+         alpha = FALSE) +
+  ggtitle("Active Volcanoes, Tectonic Plates and The Ring of Fire")
+  
+
+```
+
+- ring of fire; path that trace boundary; between several tectonic plates
+  - contain 75% of planet's volcanoes & 90% of the world's active volcano
+
+```{r}
+
+```
+
+
+
+# ========== events data set
+
+## when; started documenting events?
+```{r}
+range(events$event_date_year, na.rm = TRUE)
+```
+- since 9650 years ago.
+
+## What sort of events were documented?
+```{r}
+unique(events$event_type)
+```
+
+
+
+
+
+
