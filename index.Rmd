@@ -171,14 +171,14 @@ volcano_erupted %>%
   
 ```
 
-There are 3 main types of Active Volcanoes (erupted before) namely Stratovolcano, Caldera and Shield. We decided to label the others as `others`. Stratovolcanoes are by far the most active volcano. 
+There are 3 main types of Active(erupted before) Volcanoes namely Stratovolcano, Caldera and Shield. We decided to label the others as `others`. Stratovolcanoes are by far the most active volcano. 
 
 ```{r plates, include = FALSE}
 plate <- unique(rof$plate) %>% 
   tibble(plate = .)
 
 # convert to sf object & split into 2 polygons (to prevent across dateline)
-plates <- map(.x = plate$plate,
+plates <- purrr::map(.x = plate$plate,
     .f = function(x){
       st_polygon(x = list(as.matrix(rof %>% filter(plate == x) %>%  select(lon, lat)))) %>% 
   st_wrap_dateline()
@@ -261,11 +261,11 @@ world %>%
   
 ```
 
-We then plotted the world map of Active Volcanoes with tectonic plate boundaries overlaid. 
+We first plotted the world map of Active Volcanoes with tectonic plate boundaries overlaid. 
 
 We found that most of the volcanoes lie along the Pacific Ocean tracing the boundaries of tectonic plates. We later found that was dubbed the [Ring of Fire(or Circum-Pacific Belt)](https://www.nationalgeographic.org/encyclopedia/ring-fire/) . This path is approximately 40,000km long and holds 75% of the World's Volcanoes are situated and 90% of active ones! The abundance of volcanoes are explained by significant tectonic plates in the area since volcanoes are formed by either converging or diverging tectonic plate boundaries, creating cracks in earth. 
 
-To achieve the map, we could not just plot the tectonic boundaries as the polygons stretch across the world map (looking like they are at opposite ends of the world when in fact they are side by side since the globe is round while ggplot is 2D). So, we split the tectonic plates at the prime meridian (x-intercept where long = 0) - was assisted by a helpful member at [StackOverflow](https://stackoverflow.com/questions/63591697/how-to-split-tectonic-plate-boundary-polygon-in-a-way-to-prevent-line-across-the/63593236?noredirect=1#comment112479435_63593236)
+To achieve the map, we could not just plot the tectonic boundaries as the polygons stretch across the world map (looking like they are at opposite ends of the world when in fact they are side by side since the globe is round while ggplot is 2D). So, we split the tectonic plates at the prime meridian (x-intercept where long = 0) - was assisted by a helpful member Z.Lin at [StackOverflow](https://stackoverflow.com/questions/63591697/how-to-split-tectonic-plate-boundary-polygon-in-a-way-to-prevent-line-across-the/63593236?noredirect=1#comment112479435_63593236)
 
 ```{r ring-of-fire, fig.align="center", fig.height=8, fig.width=14}
 # ---- fix longitude; recenter coordinates to center around ring of fire
@@ -317,7 +317,7 @@ ggplot() +
         plot.subtitle = element_text(size = 16, colour = "orange"))
 ```
 
-This map zoomed into the Ring Of Fire showing volcanoes running along the boundaries. As we can see, the volcanoes here are has more eruptions relatively speaking. 
+This map zoomed into the Ring Of Fire, showing the volcanoes running along the boundaries. Relatively speaking, the volcanoes here have more eruptions.
 
 ## The interaction between volcanoes and humans - How worried should you be about volcanoes?
 
@@ -602,9 +602,11 @@ grid.arrange(triangle, pop_plot, ncol = 2,
 
 ```
 
-Above, the height of the triangle/volcanoes corresponds to the number of volcanoes within one of the six population category that is within 5km, 10km, 30km and 100km from the volcano respectively. *give better explation*
+With the above visualization, the height of the triangle(volcanoes) corresponds to the number of volcanoes that are within a population category 5km, 10km, 30km and 100km from the volcano’s vicinity respectively. 
 
-There is no fixed safety risk zones(or distnace) as volcanoes are unpredictable. However, it is said around 1km for small/medium sized eruptions(VEI = 1-2) is relatively safe as long as volcanic projectiles do not fall in that area. Given this, most volcanoes are less than 5km from a population of people. Above figure was inspired by [Sil Aarts'](https://twitter.com/sil_aarts/status/1260156344319041537/photo/1) visualization.
+Majority of the population within 5km reach of a volcano were less than 100. At a 10km range, it was a mix of population sizes. And having a population of more than 100,000 is relatively scarce.
+
+So how far must you be from a erupting volcano to be safe? There is no fixed safety risk zones(or distance) as volcanoes are unpredictable. Generally, around 1km for small/medium sized eruptions(VEI = 1-2) is relatively safe as long as volcanic projectiles do not fall in that area.[Volcanic Discovery](https://www.volcanodiscovery.com/volcanic_risk_zones.html#:~:text=4)%20Low%20Risk%20Zone&text=Typically%20you%20are%20more%20than,pyroclastic%20flows%20could%20be%20channeled.) Above figure was inspired by [Sil Aarts'](https://twitter.com/sil_aarts/status/1260156344319041537/photo/1) visualization.
 
 ### World map with number of eruptions in each country
 
@@ -815,55 +817,165 @@ t1 <- tableGrob(eruptions_1812_nsum, theme=ttheme_minimal(), rows=NULL)
 grid.arrange(eruptions_1812_pdf, t1, ncol = 2,
              widths = c(80,20),
              padding = 2)
+
+
 ```
 
 The density plots above shows that likelihood of a VEI 4 and above is very unlikely (less than 1%). In fact, almost 98% of all volcanoes have less than VEI-3. 
 
 
 ### How Frequent does volcanoes erupt?
-```{r, eval = FALSE}
-# Plot all volcanoes that erupted more than once
-eruptions_1812 %>% 
-  ungroup() %>% 
-  # filter volcanoes; with only 1 eruption i.e. NA for lag_year variable
-  filter(!is.na(lag_year)) %>% 
-  group_by(vei) %>% 
-  arrange(-n) %>% 
-  ggplot() +
-  geom_tile(aes(x = volcano_name,
-                 y = lag_year),
-            fill = "red",
-            size = 5) +
-  coord_flip() +
-  # facet by VEI
-  facet_wrap(~vei, ncol = 1)
-
-# filter top 3 volcanoes with highest frequency
-volcano_frequent <- eruptions_1812 %>% 
+```{r}
+volcano_frequent0 <- eruptions_1812 %>% 
   filter(!is.na(vei)) %>% 
+  filter(vei == 0) %>% 
   ungroup() %>% 
   group_by(volcano_name, vei) %>%
   mutate(frequency = n()) %>% 
   group_by(vei) %>% 
-  arrange(vei,-frequency) 
-  
+  arrange(vei,-frequency) %>% 
+  top_n(1, frequency)
 
-volcano_frequent$lag_year <- as.integer(volcano_frequent$lag_year)
+volcano_frequent0$lag_year <- as.integer(volcano_frequent0$lag_year)
 
-volcano_frequent$volcano <- as.factor(str_c(volcano_frequent$volcano_name, "-", volcano_frequent$vei))
+volcano_frequent0$volcano <- as.factor(str_c(volcano_frequent0$volcano_name, "-", volcano_frequent0$vei))
 
-volcano_frequent %>% 
+volcano_frequent1 <- eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
+  filter(vei == 1) %>% 
+  ungroup() %>% 
+  group_by(volcano_name, vei) %>%
+  mutate(frequency = n()) %>% 
+  group_by(vei) %>% 
+  arrange(vei,-frequency) %>% 
+  top_n(1, frequency) 
+
+volcano_frequent1$lag_year <- as.integer(volcano_frequent1$lag_year)
+
+volcano_frequent1$volcano <- as.factor(str_c(volcano_frequent1$volcano_name, "-", volcano_frequent1$vei))
+
+volcano_frequent2 <- eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
+  filter(vei == 2) %>% 
+  ungroup() %>% 
+  group_by(volcano_name, vei) %>%
+  mutate(frequency = n()) %>% 
+  group_by(vei) %>% 
+  arrange(vei,-frequency) %>% 
+  top_n(1, frequency) 
+
+volcano_frequent2$lag_year <- as.integer(volcano_frequent2$lag_year)
+
+volcano_frequent2$volcano <- as.factor(str_c(volcano_frequent2$volcano_name, "-", volcano_frequent2$vei))
+
+volcano_frequent3 <- eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
+  filter(vei == 3) %>% 
+  ungroup() %>% 
+  group_by(volcano_name, vei) %>%
+  mutate(frequency = n()) %>% 
+  group_by(vei) %>% 
+  arrange(vei,-frequency) %>% 
+  top_n(1, frequency) 
+
+volcano_frequent3$lag_year <- as.integer(volcano_frequent3$lag_year)
+
+volcano_frequent3$volcano <- as.factor(str_c(volcano_frequent3$volcano_name, "-", volcano_frequent3$vei))
+
+volcano_frequent4 <- eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
   filter(vei == 4) %>% 
+  ungroup() %>% 
+  group_by(volcano_name, vei) %>%
+  mutate(frequency = n()) %>% 
+  group_by(vei) %>% 
+  arrange(vei,-frequency) %>% 
+  top_n(1, frequency) 
+
+volcano_frequent4$lag_year <- as.integer(volcano_frequent4$lag_year)
+
+volcano_frequent4$volcano <- as.factor(str_c(volcano_frequent4$volcano_name, "-", volcano_frequent4$vei))
+  
+volcano_frequent5 <- eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
+  filter(vei == 5) %>% 
+  ungroup() %>% 
+  group_by(volcano_name, vei) %>%
+  mutate(frequency = n()) %>% 
+  group_by(vei) %>% 
+  arrange(vei,-frequency) %>% 
+  top_n(1, frequency)   
+
+volcano_frequent5$lag_year <- as.integer(volcano_frequent5$lag_year)
+
+volcano_frequent5$volcano <- as.factor(str_c(volcano_frequent5$volcano_name, "-", volcano_frequent5$vei))
+
+volcano_frequent6 <- eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
+  filter(vei == 6) %>% 
+  ungroup() %>% 
+  group_by(volcano_name, vei) %>%
+  mutate(frequency = n()) %>% 
+  group_by(vei) %>% 
+  arrange(vei,-frequency) %>% 
+  top_n(1, frequency) %>% 
+  head(1)
+
+
+volcano_frequent6$lag_year <- as.integer(volcano_frequent6$lag_year)
+
+volcano_frequent6$volcano <- as.factor(str_c(volcano_frequent6$volcano_name, "-", volcano_frequent6$vei))
+
+volcano_frequent7 <- eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
+  filter(vei == 7) %>% 
+  ungroup() %>% 
+  group_by(volcano_name, vei) %>%
+  mutate(frequency = n()) %>% 
+  group_by(vei) %>% 
+  arrange(vei,-frequency) %>% 
+  top_n(1, frequency) 
+  
+volcano_frequent7$lag_year <- as.integer(volcano_frequent7$lag_year)
+
+volcano_frequent7$volcano <- as.factor(str_c(volcano_frequent7$volcano_name, "-", volcano_frequent7$vei))
+
+volcano_frequent_total <- tibble(rbind(volcano_frequent0, volcano_frequent1, volcano_frequent2, volcano_frequent3, volcano_frequent4, volcano_frequent5,
+      volcano_frequent6, volcano_frequent7))
+
+frequency_plot <- volcano_frequent_total %>% 
   ggplot() +
-  geom_point(aes(x = lag_year,
-                y = as.factor(volcano))) +
-  scale_x_continuous(breaks = seq(from = 1812, to = 2020, by =1))
-  
-  ?slice_max
-  
+  geom_tile(aes(x = lag_year,
+                y = volcano),
+            fill = "red") +
+  ggtitle("Frequency of Most Active Volcanoes in each VEI category") +
+  theme(plot.title = element_text(face = "bold",
+                                  size = 15))
+
+t2 <- volcano_frequent_total %>% 
+  distinct(volcano, .keep_all = TRUE) %>% 
+  select(volcano, frequency) 
+
+t2$volcano <- factor(t2$volcano, levels = c("Kilauea-0", "Tambora-7","Krakatau-6","Agung-5", "Kelut-4",  "Bezymianny-3", "Asosan-2", "Etna-1"))
+
+
+
 
 
 ```
+
+
+```{r, fig.align="center", fig.width = 13, warning = FALSE, message = FALSE, results='asis'}
+t2<- tableGrob(t2, theme=ttheme_minimal(), rows=NULL)
+
+grid.arrange(frequency_plot, t2, ncol = 2,
+             widths = c(80,20),
+             padding = 2)
+
+
+```
+
+The tiles above plot the frequency of the Most Active Volcano in each VEI Category. Each tile represents an eruption.
 
 
 ```{r, include=FALSE, warning=FALSE, message=FALSE, echo=FALSE}
@@ -895,20 +1007,23 @@ a5num1k
 ```
 
 
-The general distribution of eruption duration is portrayed in BOXPLOT, in accordance with VEI level of eruptions. It is clear that eruptions for all VEI levels mostly last less than 1000 days (excluding outliers). Yet eruptions with VEI level 3 tend to last longer than all other levels with the median of 105.5 days and the 3rd quartile of 592.5 days. 
+The general distribution of eruption duration is portrayed in the boxplot, in accordance with VEI level of eruptions. It is clear that eruptions for all VEI levels mostly last less than 500 days (excluding outliers). Yet eruptions with VEI level 3 tend to last longer than all other levels with the median of 105.5 days and the 3rd quartile of 592.5 days. 
 For the lowest VEI level of 0, its minimum (0 days) and Q3 (94 days) durations are the shortest, followed by its Q1 (1.5 days) and median (14 days) as the second lowest ones among 6 levels. Nevertheless, its maximum duration (2774 days) exceeds that of VEI level 5 (2406 days) and 6 (154 days).
 For the highest VEI level of 6, even though its minimum duration (18 days) is the highest compared with all other levels, the remaining figures of five-number summary did not significantly differentiate itself against other levels. Surprisingly, the maximum duration (154 days) of VEI level 6 is the lowest compared to all levels.
 
 
-```{r jfa1, warning=FALSE, echo=FALSE, fig.align="center", fig.height=8, fig.width=14}
+```{r jfa1, warning=TRUE, echo=FALSE, fig.align="center", fig.height=8, fig.width=14}
 abox <- ggplot(vei_du, aes(x = as.factor(vei), y = duration, color = vei)) +
   geom_boxplot(outlier.shape = NA) +
   coord_flip() +
-  scale_y_continuous(limits=c(-100,1500), breaks=seq(0,1500,500), expand = c(0, 0)) +
+  scale_y_continuous(limits=c(-100,500), breaks=seq(0,1500,500), expand = c(0, 0)) +
   labs(title = "Five number summary distribtuion for VEI level from 0 to 6",
        x = "VEI",
-       y = "Eruption duration (Days)")
-abox
+       y = "Eruption duration (Days)") 
+
+abox +
+  theme(plot.title = element_text(size = 14,
+                                  face = "bold"))
 ```
 
 ```{r, include=FALSE, message=FALSE, echo=FALSE}
@@ -927,7 +1042,9 @@ alm <- ggplot(vei_du, aes(x = vei, y = duration)) +
   labs(title = "Linear model of VEI against eruption duration")
 aglm <- glance(a2) %>%
   select(r.squared, adj.r.squared)
-kable(aglm)
+
+kable(aglm) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
 ### Which tectonic settings have longer or shorter eruption duration?
@@ -950,10 +1067,12 @@ ajoin3 <- a3 %>%
     mutate(Percentage = n/sum(n)*100)
 ```
 
-FIGURE first orders the volano eruptions with long duration ( >365 days) by their tectonic settings. Subduction zone / Continental crust ( >25km) dominates among all tectonic settings with most long duration eruptions both intuitively and proportionally - 90 long duration eruptions, accounting for 58.824% compared with others. Followed by Subduction zone / Continental crust ( >25 km) is Subduction zone / Oceanic crust ( <15km), yet a large gap between them is displayed. Particularly, 14 long duration eruptions occur on Subduction zone / Oceanic crust ( <15km), resulting with 9.15%. The remaining tectonic settings have very close figures, as well as proportion, having Intraplate / Intermediate crust (15-25 km) be the one with least long duration eruptions.
+The figure first orders the volcano eruptions with long duration ( >365 days) by their tectonic settings. Subduction zone / Continental crust ( >25km) dominates among all tectonic settings with most long duration eruptions both intuitively and proportionally - 90 long duration eruptions, accounting for 58.824% compared with others. Followed by Subduction zone / Continental crust ( >25 km) is Subduction zone / Oceanic crust ( <15km), yet a large gap between them is displayed. Particularly, 14 long duration eruptions occur on Subduction zone / Oceanic crust ( <15km), resulting with 9.15%. The remaining tectonic settings have very close figures, as well as proportion, having Intraplate / Intermediate crust (15-25 km) be the one with least long duration eruptions.
+In the same way, the number of short duration ( <30 days) eruptions for each tectonic settins is exhibited below. A similarity between this plot and the above one for long duration eruptions is that Subduction zone / Continental crust ( >25 km) and Intraplate / Intermediate crust (15-25 km) still remain in the same position, in this case - short duration eruption. Some variation emerges within the middle range of the order. For instance, there are only 7 long duration eruptions (4.575%) on Rift zone / Oceanic crust ( <15km), however the number of short duration eruptions rises to 30, accounting for 10.067% among all tectonic settings. 
+Moreover, comparing the length of the bars, it is apparent that every number from long duration eruptions for all tectonic settings increase when it comes to short duration. Hence, short duration eruptions occur more frequently than the long ones.
+
 
 ```{r jfa2, include=FALSE, message=FALSE, warning=FALSE, echo=FALSE}  
-# keep
 altectplot <- atect3 %>% 
   filter(!is.na(tectonic_settings)) %>%
   ggplot() + 
@@ -961,7 +1080,9 @@ altectplot <- atect3 %>%
   coord_flip() +
   labs(x = "Tectonic settings",
        y = "Count",
-       title = "Tectonic settings with long duration ( >365 days) eruptions")
+       title = "Tectonic settings with long duration ( >365 days) eruptions") +
+  theme(plot.title = element_text(size = 14,
+                                  face = "bold"))
 ```
 
 ```{r, include=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
@@ -983,9 +1104,6 @@ atect4 <- ajoin4 %>%
   mutate(Percentage = n/sum(n)*100)
 ```
 
-In the same way, the number of short duration ( <30 days) eruptions for each tectonic settins is exhibited below. A similarity between this plot and the above one for long duration eruptions is that Subduction zone / Continental crust ( >25 km) and Intraplate / Intermediate crust (15-25 km) still remain in the same position, in this case - short duration eruption. Some variation emerges within the middle range of the order. For instance, there are only 7 long duration eruptions (4.575%) on Rift zone / Oceanic crust ( <15km), however the number of short duration eruptions rises to 30, accounting for 10.067% among all tectonic settings. 
-Moreover, comparing the length of the bars, it is apparent that every number from long duration eruptions for all tectonic settings increase when it comes to short duration. Hence, short duration eruptions occur more frequently than the long ones.
-
 ```{r jfa3, include=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
 # keep
 astectplot <- atect4 %>% 
@@ -995,22 +1113,23 @@ astectplot <- atect4 %>%
   coord_flip() +
    labs(x = "Tectonic settings",
        y = "Count",
-       title = "Tectonic settings with short duration ( <30 days) eruptions")
+       title = "Tectonic settings with short duration ( <30 days) eruptions") +
+  theme(plot.title = element_text(size = 14,
+                                  face = "bold"))
 ```
 
-```{r jcbplot, message=FALSE, warning=FALSE, echo=FALSE}
-alstect <- grid.arrange(altectplot, astectplot)
-alstect
+```{r jcbplot, message=FALSE, warning=FALSE, echo=FALSE, fig.align="center", fig.width=14, fig.height = 10}
+grid.arrange(altectplot, astectplot)
 ```
 
 ### World map of long and short duration eruption
 
-The MAP plots the locations of the volcanoes, categorised by their duration of eruptions. It can be easily observed that volcanoes with short duration eruptions are more concentrated, so are more likely to form into a "line" shape. On the other hand volcanoes with long durations seem to be more dispersed. Looking them as a whole, volcanoes are mainly located in coastline areas.
+The map plots the locations of the volcanoes, categorised by their duration of eruptions. It can be easily observed that volcanoes with short duration eruptions are more concentrated, so are more likely to form into a "line" shape. On the other hand volcanoes with long durations seem to be more dispersed. Looking them as a whole, volcanoes are mainly located in coastline areas.
 
-```{r jma1, message=FALSE, echo=FALSE}
-# keep
+```{r jma1, message=FALSE, echo=FALSE, eval = TRUE}
 a5 <- rbind(a3, a4)
-make_bbox(lon = a5$longitude, 
+
+bbox <- make_bbox(lon = a5$longitude, 
                 a5$latitude, f = 0.9) 
 
 pal <- colorFactor(
@@ -1032,6 +1151,7 @@ a5_locations = leaflet(data = a5) %>%
    addTiles() %>%
    addLegend(pal = pal, values = ~`Duration category`, opacity = 1, 
             title = "Duration category", position = "bottomright") %>%   addProviderTiles("CartoDB.Positron")
+
 a5_locations
 ```
 
@@ -1051,9 +1171,9 @@ bjoin0 <- b0 %>%
 ```
 
 ### World map of eruption based on VEI level
-This MAP captures the volcanoes that have erupted from year to year according to their respective VEI level.
+This map captures the volcanoes that have erupted from year to year according to their respective VEI level.
 
-```{r jma2, message=FALSE, warning=FALSE, echo=FALSE}
+```{r jma2, message=FALSE, warning=FALSE, echo=FALSE, eval = TRUE}
  pal1 <- colorFactor(
   palette = c('yellow', 'orange', 'red', 'dark red'),
   domain = b0$vei
@@ -1095,13 +1215,12 @@ bmean0 <- b0 %>%
   ungroup(vei, start_year) %>%
   filter(n >= 2) %>%
   summarise(mean(vei))
-
 ```
 
 ### Which tectonic settings have high or low frequency of eruptions?
-FIGURE depicts the tectonic settings with the record of at least two or more volcano eruptions within one year. Out of 10 tectonic settings recorded (NAs excluded), only 6 of them are listed under this condition. Tectonic settings with both long and short duration eruptions have all been listed here in regards with high frequency. Subduction zone / Continental crust ( >25km) is again positioned with the most times (21 times) of eruptions of high frequency, but this time followed by Intraplate / Oceanic crust ( <15km), where only 7 high and 15 short duration eruptions are marked. Rift zone / Oceanic crust ( <15km), placing with the least eruptions of high frequency, actually has 30 times of short duration eruptions which is considered quite high.
+As shown in the figure, the tectonic settings with the record of at least two or more volcano eruptions within one year. Out of 10 tectonic settings recorded (NAs excluded), only 6 of them are listed under this condition. Tectonic settings with both long and short duration eruptions have all been listed here in regards with high frequency. Subduction zone / Continental crust ( >25km) is again positioned with the most times (21 times) of eruptions of high frequency, but this time followed by Intraplate / Oceanic crust ( <15km), where only 7 high and 15 short duration eruptions are marked. Rift zone / Oceanic crust ( <15km), placing with the least eruptions of high frequency, actually has 30 times of short duration eruptions which is considered quite high.
 
-```{r jfb1, message=FALSE, warning=FALSE, echo=FALSE}
+```{r jfb1, message=FALSE, warning=FALSE, echo=FALSE, fig.height=8, fig.align="center", fig.width=12}
 # keep
 bhftectplot <- btect0 %>% 
   filter(!is.na(tectonic_settings)) %>%
@@ -1110,7 +1229,10 @@ bhftectplot <- btect0 %>%
   coord_flip() +
   labs(x = "Tectonic settings",
        y = "Count",
-       title = "Tectonic settings with high frequency ( ≥2 eruptions in 1 year) eruptions")
+       title = "Tectonic settings with high frequency ( ≥2 eruptions in 1 year) eruptions") +
+  theme(plot.title = element_text(face = "bold",
+                                  size = 14))
+
 bhftectplot
 ```
 
@@ -1134,9 +1256,116 @@ Overall, with the highest VEI average (2.667), neither long duration eruptions (
 On the opposite, with the lowest ranking for average VEI (0.923), volcanoes on the Intraplate / Oceanic crust ( <15 km) don't tend to erupt with long duration ( >365 days) where it’s long duration eruption only holds 4.575%, compared with other tectonic settings. Nevertheless, it has a greater percentage for both short duration (5.033%) and high frequency (9.677%) eruptions.
 
 ```{r jtt1, echo=FALSE, message=FALSE}
-tect_avg <- kable(hl_tect, caption = "Average VEI level for each tectonic setting")
+tect_avg <- kable(hl_tect, caption = "Average VEI level for each tectonic setting") %>% kable_styling(bootstrap_options = c("striped", "hover"))
+
 tect_avg
 ```
 
 
 # References
+
+
+```{r}
+citation("tidyverse")
+citation("lubridate")
+citation("broom")
+citation("leaflet")
+citation("ggmap")
+citation("mapview")
+citation("viridis")
+citation("rgdal")
+citation("kableExtra")
+citation("gridExtra")
+citation("readr")
+citation("knitr")
+citation("sf")
+citation("data.table")
+citation("ggthemes")
+citation("maps")
+```
+
+Baptiste Auguie (2017). gridExtra: Miscellaneous Functions for "Grid"
+  Graphics. R package version 2.3.
+  https://CRAN.R-project.org/package=gridExtra
+  
+David Robinson, Alex Hayes and Simon Couch (2020). broom: Convert
+  Statistical Objects into Tidy Tibbles. R package version 0.7.0.
+  https://CRAN.R-project.org/package=broom
+  
+D. Kahle and H. Wickham. ggmap: Spatial Visualization with ggplot2. The
+  R Journal, 5(1), 144-161. URL
+  http://journal.r-project.org/archive/2013-1/kahle-wickham.pdf  
+
+Garrett Grolemund, Hadley Wickham (2011). Dates and Times Made Easy
+  with lubridate. Journal of Statistical Software, 40(3), 1-25. URL
+  http://www.jstatsoft.org/v40/i03/.
+  
+Hadley Wickham, Jim Hester and Romain Francois (2018). readr: Read
+  Rectangular Text Data. R package version 1.3.1.
+  https://CRAN.R-project.org/package=readr
+  
+Hao Zhu (2019). kableExtra: Construct Complex Table with 'kable' and
+  Pipe Syntax. R package version 1.1.0.
+  https://CRAN.R-project.org/package=kableExtra
+  
+Jeffrey B. Arnold (2019). ggthemes: Extra Themes, Scales and Geoms for
+  'ggplot2'. R package version 4.2.0.
+  https://CRAN.R-project.org/package=ggthemes
+  
+Joe Cheng, Bhaskar Karambelkar and Yihui Xie (2019). leaflet: Create
+  Interactive Web Maps with the JavaScript 'Leaflet' Library. R package
+  version 2.0.3. https://CRAN.R-project.org/package=leaflet
+  
+Matt Dowle and Arun Srinivasan (2020). data.table: Extension of
+  `data.frame`. R package version 1.13.0.
+  https://CRAN.R-project.org/package=data.table
+  
+National Geographic. (n.d.). Ring of Fire. Retrieved from https://www.nationalgeographic.org/encyclopedia/ring-fire/
+  
+Original S code by Richard A. Becker, Allan R. Wilks. R version by Ray
+  Brownrigg. Enhancements by Thomas P Minka and Alex Deckmyn. (2018).
+  maps: Draw Geographical Maps. R package version 3.3.0.
+  https://CRAN.R-project.org/package=maps
+
+Pebesma, E., 2018. Simple Features for R: Standardized Support for
+  Spatial Vector Data. The R Journal 10 (1), 439-446,
+  https://doi.org/10.32614/RJ-2018-009  
+
+Roger Bivand, Tim Keitt and Barry Rowlingson (2020). rgdal: Bindings
+  for the 'Geospatial' Data Abstraction Library. R package version
+  1.5-15. https://CRAN.R-project.org/package=rgdal
+
+Safety on volcanoes: risk zones around volcanoes. (2020). Retrieved 28 August 2020, from https://www.volcanodiscovery.com/volcanic_risk_zones.html#:~:text=4)%20Low%20Risk%20Zone&text=Typically%20you%20are%20more%20than,pyroclastic%20flows%20could%20be%20channeled.
+
+Sigurdsson, H., Houghton, B., McNutt, S., Rymer, H., & Stix, J. (Eds.). (2015). The encyclopedia of volcanoes. Elsevier.
+  
+Simon Garnier (2018). viridis: Default Color Maps from 'matplotlib'. R
+  package version 0.5.1. https://CRAN.R-project.org/package=viridis
+  
+
+Tim Appelhans, Florian Detsch, Christoph Reudenbach and Stefan
+  Woellauer (2020). mapview: Interactive Viewing of Spatial Data in R. R
+  package version 2.9.0. https://CRAN.R-project.org/package=mapview
+  
+Wickham et al., (2019). Welcome to the tidyverse. Journal of Open
+  Source Software, 4(43), 1686, https://doi.org/10.21105/joss.01686  
+  
+  Wikipedia. (n.d.). Volcanic Explosivity Index. Retrieved from https://en.wikipedia.org/wiki/Volcanic_Explosivity_Index
+  
+Yihui Xie (2020). knitr: A General-Purpose Package for Dynamic Report
+  Generation in R. R package version 1.29.
+
+Yihui Xie (2015) Dynamic Documents with R and knitr. 2nd edition.
+  Chapman and Hall/CRC. ISBN 978-1498716963
+
+Yihui Xie (2014) knitr: A Comprehensive Tool for Reproducible Research
+  in R. In Victoria Stodden, Friedrich Leisch and Roger D. Peng, editors,
+  Implementing Reproducible Computational Research. Chapman and Hall/CRC.
+  ISBN 978-1466561595  
+  
+
+  
+
+
+
+
