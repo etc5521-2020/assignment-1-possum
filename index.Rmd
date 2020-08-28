@@ -757,7 +757,9 @@ eruptions_1812_pdf <- eruptions_1812_pdf %>%
   scale_x_continuous(breaks = seq(from = 0, to = 70, by = 5 )) +
   ylab("VEI") +
   xlab("number of eruptions") +
-  ggtitle("Probability density function of eruptions in each VEI category")
+  ggtitle("Probability density function of eruptions in each VEI category") +
+  theme(plot.title = element_text(face = "bold",
+                                  size = 15))
 ```
 
 ```{r eruptions-1812-nsum}
@@ -777,7 +779,7 @@ eruptions_1812_nsum <- eruptions_1812_nsum %>%
   select(vei, percent, percent_change) 
 
 # concatenate < VEI
-eruptions_1812_nsum$vei <- str_c("< VEI-", eruptions_1812_nsum$vei )
+eruptions_1812_nsum$vei <- str_c("< VEI-", eruptions_1812_nsum$vei)
 
 eruptions_1812_nsum <- eruptions_1812_nsum
 ```
@@ -795,53 +797,155 @@ The density plots above shows that likelihood of a VEI 4 and above is very unlik
 
 
 ### How Frequent does volcanoes erupt?
-```{r, eval = FALSE}
-# Plot all volcanoes that erupted more than once
-eruptions_1812 %>% 
-  ungroup() %>% 
-  # filter volcanoes; with only 1 eruption i.e. NA for lag_year variable
-  filter(!is.na(lag_year)) %>% 
-  group_by(vei) %>% 
-  arrange(-n) %>% 
-  ggplot() +
-  geom_tile(aes(x = volcano_name,
-                 y = lag_year),
-            fill = "red",
-            size = 5) +
-  coord_flip() +
-  # facet by VEI
-  facet_wrap(~vei, ncol = 1)
-
-# filter top 3 volcanoes with highest frequency
-volcano_frequent <- eruptions_1812 %>% 
+```{r}
+volcano_frequent0 <- eruptions_1812 %>% 
   filter(!is.na(vei)) %>% 
+  filter(vei == 0) %>% 
   ungroup() %>% 
   group_by(volcano_name, vei) %>%
   mutate(frequency = n()) %>% 
   group_by(vei) %>% 
-  arrange(vei,-frequency) 
-  
+  arrange(vei,-frequency) %>% 
+  top_n(1, frequency)
 
-volcano_frequent$lag_year <- as.integer(volcano_frequent$lag_year)
+volcano_frequent0$lag_year <- as.integer(volcano_frequent0$lag_year)
 
-volcano_frequent$volcano <- as.factor(str_c(volcano_frequent$volcano_name, "-", volcano_frequent$vei))
+volcano_frequent0$volcano <- as.factor(str_c(volcano_frequent0$volcano_name, "-", volcano_frequent0$vei))
 
-volcano_frequent %>% 
+volcano_frequent1 <- eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
+  filter(vei == 1) %>% 
+  ungroup() %>% 
+  group_by(volcano_name, vei) %>%
+  mutate(frequency = n()) %>% 
+  group_by(vei) %>% 
+  arrange(vei,-frequency) %>% 
+  top_n(1, frequency) 
+
+volcano_frequent1$lag_year <- as.integer(volcano_frequent1$lag_year)
+
+volcano_frequent1$volcano <- as.factor(str_c(volcano_frequent1$volcano_name, "-", volcano_frequent1$vei))
+
+volcano_frequent2 <- eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
+  filter(vei == 2) %>% 
+  ungroup() %>% 
+  group_by(volcano_name, vei) %>%
+  mutate(frequency = n()) %>% 
+  group_by(vei) %>% 
+  arrange(vei,-frequency) %>% 
+  top_n(1, frequency) 
+
+volcano_frequent2$lag_year <- as.integer(volcano_frequent2$lag_year)
+
+volcano_frequent2$volcano <- as.factor(str_c(volcano_frequent2$volcano_name, "-", volcano_frequent2$vei))
+
+volcano_frequent3 <- eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
+  filter(vei == 3) %>% 
+  ungroup() %>% 
+  group_by(volcano_name, vei) %>%
+  mutate(frequency = n()) %>% 
+  group_by(vei) %>% 
+  arrange(vei,-frequency) %>% 
+  top_n(1, frequency) 
+
+volcano_frequent3$lag_year <- as.integer(volcano_frequent3$lag_year)
+
+volcano_frequent3$volcano <- as.factor(str_c(volcano_frequent3$volcano_name, "-", volcano_frequent3$vei))
+
+volcano_frequent4 <- eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
   filter(vei == 4) %>% 
+  ungroup() %>% 
+  group_by(volcano_name, vei) %>%
+  mutate(frequency = n()) %>% 
+  group_by(vei) %>% 
+  arrange(vei,-frequency) %>% 
+  top_n(1, frequency) 
+
+volcano_frequent4$lag_year <- as.integer(volcano_frequent4$lag_year)
+
+volcano_frequent4$volcano <- as.factor(str_c(volcano_frequent4$volcano_name, "-", volcano_frequent4$vei))
+  
+volcano_frequent5 <- eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
+  filter(vei == 5) %>% 
+  ungroup() %>% 
+  group_by(volcano_name, vei) %>%
+  mutate(frequency = n()) %>% 
+  group_by(vei) %>% 
+  arrange(vei,-frequency) %>% 
+  top_n(1, frequency)   
+
+volcano_frequent5$lag_year <- as.integer(volcano_frequent5$lag_year)
+
+volcano_frequent5$volcano <- as.factor(str_c(volcano_frequent5$volcano_name, "-", volcano_frequent5$vei))
+
+volcano_frequent6 <- eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
+  filter(vei == 6) %>% 
+  ungroup() %>% 
+  group_by(volcano_name, vei) %>%
+  mutate(frequency = n()) %>% 
+  group_by(vei) %>% 
+  arrange(vei,-frequency) %>% 
+  top_n(1, frequency) %>% 
+  head(1)
+
+
+volcano_frequent6$lag_year <- as.integer(volcano_frequent6$lag_year)
+
+volcano_frequent6$volcano <- as.factor(str_c(volcano_frequent6$volcano_name, "-", volcano_frequent6$vei))
+
+volcano_frequent7 <- eruptions_1812 %>% 
+  filter(!is.na(vei)) %>% 
+  filter(vei == 7) %>% 
+  ungroup() %>% 
+  group_by(volcano_name, vei) %>%
+  mutate(frequency = n()) %>% 
+  group_by(vei) %>% 
+  arrange(vei,-frequency) %>% 
+  top_n(1, frequency) 
+  
+volcano_frequent7$lag_year <- as.integer(volcano_frequent7$lag_year)
+
+volcano_frequent7$volcano <- as.factor(str_c(volcano_frequent7$volcano_name, "-", volcano_frequent7$vei))
+
+volcano_frequent_total <- tibble(rbind(volcano_frequent0, volcano_frequent1, volcano_frequent2, volcano_frequent3, volcano_frequent4, volcano_frequent5,
+      volcano_frequent6, volcano_frequent7))
+
+frequency_plot <- volcano_frequent_total %>% 
   ggplot() +
-  geom_point(aes(x = lag_year,
-                y = as.factor(volcano))) +
-  scale_x_continuous(breaks = seq(from = 1812, to = 2020, by =1))
-  
-  ?slice_max
-  
+  geom_tile(aes(x = lag_year,
+                y = volcano),
+            fill = "red") +
+  ggtitle("Frequency of Most Active Volcanoes in each VEI category") +
+  theme(plot.title = element_text(face = "bold",
+                                  size = 15))
+
+t2 <- volcano_frequent_total %>% 
+  distinct(volcano, .keep_all = TRUE) %>% 
+  select(volcano, frequency) 
+
+t2$volcano <- factor(t2$volcano, levels = c("Kilauea-0", "Tambora-7","Krakatau-6","Agung-5", "Kelut-4",  "Bezymianny-3", "Asosan-2", "Etna-1"))
+
+
+
 
 
 ```
 
 
+```{r, fig.align="center", fig.width = 13}
+t2<- tableGrob(t2, theme=ttheme_minimal(), rows=NULL)
 
+grid.arrange(frequency_plot, t2, ncol = 2,
+             widths = c(80,20),
+             padding = 2)
+```
 
+The tiles above plot the frequency of the Most Active Volcano in each VEI Category. Each tile represents an eruption.
 
 
 
