@@ -152,10 +152,9 @@ plate <- unique(rof$plate) %>%
   tibble(plate = .)
 
 # convert to sf object & split into 2 polygons (to prevent across dateline)
-plates <- map(.x = plate$plate,
-    .f = function(x){
-      st_polygon(x = list(as.matrix(rof %>% filter(plate == x) %>%  select(lon, lat)))) %>% 
-  st_wrap_dateline()
+plates <- purrr::map(.x = plate$plate,
+    .f = function(x){st_polygon(x = list(as.matrix(rof %>% filter(plate == x) %>%  
+                                      select(lon, lat)))) %>% sf::st_wrap_dateline()
     }) 
 
 # convert polygons back to dataframe
