@@ -12,7 +12,7 @@ output:
 
 [This assignment is for ETC5521 Assignment 1 by Team `r rmarkdown::metadata$team` comprising of `r knitr::combine_words(rmarkdown::metadata$author)`.]{style="color:#006DAE;"}
 
-```{r, eval = FALSE}
+```{r, eval = TRUE, echo=FALSE, include=FALSE}
 # ----- cleaning script 
 library(readxl)
 library(tidyverse)
@@ -25,29 +25,9 @@ library(viridis)
 library(rgdal)
 library(kableExtra)
 library(gridExtra)
-
-eruption_list <- read_csv("2020/2020-05-12/eruption_list.csv", skip = 1) %>% 
-  janitor::clean_names() %>% 
-  select(-contains("modifier"), -contains("uncertainty"))
-
-event_list <- read_csv("2020/2020-05-12/event_list.csv", skip = 1) %>% 
-  janitor::clean_names() %>% 
-  select(-contains("modifier"), -contains("uncertainty"))
-
-volcano_list <- read_csv("2020/2020-05-12/volcano_list.csv", skip = 1) %>% 
-  janitor::clean_names()
-
-eruption_list %>% 
-  write_csv("2020/2020-05-12/eruptions.csv")
-
-event_list %>% 
-  write_csv("2020/2020-05-12/events.csv")
-
-volcano_list %>% 
-  write_csv("2020/2020-05-12/volcano.csv")
 ```
 
-```{r getting-data}
+```{r getting-data, echo=FALSE, include=FALSE}
 # Get the Data
 
 volcano <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv')
@@ -89,7 +69,7 @@ The data source is from The Smithsonian Institution (volcano.si.edu), which has 
 
 [FILL] Should include at least one plot or numerical summary for each of your questions, that helps the reader arrive at an answer. You should also write paragraphs describing the methods, summaries and findings. 
 
-```{r}
+```{r, include=FALSE, warning=FALSE, message=FALSE, echo=FALSE}
 vei_du <- eruptions %>%
   na.exclude(vei, start_year, start_month, start_day, end_year, end_month, end_day) %>%
   select(everything()) %>%
@@ -102,7 +82,7 @@ vei_du <- eruptions %>%
 vei_du %>%
   group_by(vei) %>%
   summarise(mean(duration))
-# keep
+
 a1 <- tapply(vei_du$duration, vei_du$vei, summary)
 a5num1 <- list2DF(a1) %>%
   mutate(`VEI` = print(c("Min", "Q1", "Median", "Mean", "Q3", "Max"))) 
@@ -117,8 +97,8 @@ The general distribution of eruption duration is portrayed in BOXPLOT, in accord
 For the lowest VEI level of 0, its minimum (0 days) and Q3 (94 days) durations are the shortest, followed by its Q1 (1.5 days) and median (14 days) as the second lowest ones among 6 levels. Nevertheless, its maximum duration (2774 days) exceeds that of VEI level 5 (2406 days) and 6 (154 days).
 For the highest VEI level of 6, even though its minimum duration (18 days) is the highest compared with all other levels, the remaining figures of five-number summary did not significantly differentiate itself against other levels. Surprisingly, the maximum duration (154 days) of VEI level 6 is the lowest compared to all levels.
 
-# keep
-```{r jfa1}
+
+```{r jfa1, warning=FALSE, echo=FALSE}
 abox <- ggplot(vei_du, aes(x = as.factor(vei), y = duration, color = vei)) +
   geom_boxplot(outlier.shape = NA) +
   coord_flip() +
@@ -129,7 +109,7 @@ abox <- ggplot(vei_du, aes(x = as.factor(vei), y = duration, color = vei)) +
 abox
 ```
 
-```{r}
+```{r, include=FALSE, message=FALSE, echo=FALSE}
 # keep, but trim outliers
 a2 <- vei_du %>%
   select(duration, vei) %>%
@@ -148,7 +128,7 @@ aglm <- glance(a2) %>%
 kable(aglm)
 ```
 
-```{r duration}
+```{r duration, include=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
 a3 <- vei_du %>%
   filter(duration > 365) %>%
   count(volcano_number, volcano_name, latitude, longitude, vei) %>%
@@ -168,7 +148,8 @@ ajoin3 <- a3 %>%
 ```
 
 FIGURE first orders the volano eruptions with long duration ( >365 days) by their tectonic settings. Subduction zone / Continental crust ( >25km) dominates among all tectonic settings with most long duration eruptions both intuitively and proportionally - 90 long duration eruptions, accounting for 58.824% compared with others. Followed by Subduction zone / Continental crust ( >25 km) is Subduction zone / Oceanic crust ( <15km), yet a large gap between them is displayed. Particularly, 14 long duration eruptions occur on Subduction zone / Oceanic crust ( <15km), resulting with 9.15%. The remaining tectonic settings have very close figures, as well as proportion, having Intraplate / Intermediate crust (15-25 km) be the one with least long duration eruptions.
-```{r jfa2}  
+
+```{r jfa2, include=FALSE, message=FALSE, warning=FALSE, echo=FALSE}  
 # keep
 altectplot <- atect3 %>% 
   filter(!is.na(tectonic_settings)) %>%
@@ -177,10 +158,10 @@ altectplot <- atect3 %>%
   coord_flip() +
   labs(x = "Tectonic settings",
        y = "Count",
-       title = "Tectonic settings with high duration ( >365 days) eruptions")
+       title = "Tectonic settings with long duration ( >365 days) eruptions")
 ```
 
-```{r}
+```{r, include=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
 a4 <- vei_du %>%
   filter(duration < 30) %>%
   count(volcano_number, volcano_name, latitude, longitude, vei) %>%
@@ -199,13 +180,11 @@ atect4 <- ajoin4 %>%
   mutate(Percentage = n/sum(n)*100)
 ```
 
-```{r jcbplot}
-alstect <- grid.arrange(altectplot, astectplot)
-alstect
-```
+
 In the same way, the number of short duration ( <30 days) eruptions for each tectonic settins is exhibited below. A similarity between this plot and the above one for long duration eruptions is that Subduction zone / Continental crust ( >25 km) and Intraplate / Intermediate crust (15-25 km) still remain in the same position, in this case - short duration eruption. Some variation emerges within the middle range of the order. For instance, there are only 7 long duration eruptions (4.575%) on Rift zone / Oceanic crust ( <15km), however the number of short duration eruptions rises to 30, accounting for 10.067% among all tectonic settings. 
 Moreover, comparing the length of the bars, it is apparent that every number from long duration eruptions for all tectonic settings increase when it comes to short duration. Hence, short duration eruptions occur more frequently than the long ones.
-```{r jfa3}
+
+```{r jfa3, include=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
 # keep
 astectplot <- atect4 %>% 
   filter(!is.na(tectonic_settings)) %>%
@@ -216,9 +195,13 @@ astectplot <- atect4 %>%
        y = "Count",
        title = "Tectonic settings with short duration ( <30 days) eruptions")
 ```
+```{r jcbplot, message=FALSE, warning=FALSE, echo=FALSE}
+alstect <- grid.arrange(altectplot, astectplot)
+alstect
+```
 
 The MAP plots the locations of the volcanoes, categorised by their duration of eruptions. It can be easily observed that volcanoes with short duration eruptions are more concentrated, so are more likely to form into a "line" shape. On the other hand volcanoes with long durations seem to be more dispersed. Looking them as a whole, volcanoes are mainly located in coastline areas.
-```{r jma1}
+```{r jma1, message=FALSE, echo=FALSE}
 # keep
 a5 <- rbind(a3, a4)
 make_bbox(lon = a5$longitude, 
@@ -246,21 +229,24 @@ a5_locations = leaflet(data = a5) %>%
 a5_locations
 ```
 
-```{r frequency}
+```{r frequency, include=FALSE, echo=FALSE}
 b0 <- eruptions %>%
   na.exclude(vei, start_year) %>%
   group_by(start_year) %>%
   select(volcano_number, volcano_name, vei, latitude, longitude, start_year) %>%
   count(volcano_number, volcano_name, vei, latitude, longitude) %>%
-  arrange(desc(n)) %>%
-  mutate(`Total eruption` = sum(b0$n)) 
+  arrange(desc(n)) 
+
+b0 <- b0 %>%mutate(`Total eruption` = sum(b0$n)) 
 
 bjoin0 <- b0 %>%
   select(volcano_number, volcano_number, vei, `Total eruption`) %>%
   left_join(volcano) 
 ```
+
 This MAP captures the volcanoes that have erupted from year to year according to their respective VEI level.
-```{r jma2}
+
+```{r jma2, message=FALSE, warning=FALSE, echo=FALSE}
  pal1 <- colorFactor(
   palette = c('yellow', 'orange', 'red', 'dark red'),
   domain = b0$vei
@@ -283,7 +269,7 @@ b0_locations = leaflet(data = b0) %>%
 b0_locations 
 ```
 
-```{r}
+```{r, include=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
 # erupt twice or more within a year
 bjoin0 <- b0 %>%
   ungroup(vei, start_year) %>%
@@ -305,7 +291,9 @@ bmean0 <- b0 %>%
 
 ```
 
-```{r jfb1}
+FIGURE depicts the tectonic settings with the record of at least two or more volcano eruptions within one year. Out of 10 tectonic settings recorded (NAs excluded), only 6 of them are listed under this condition. Tectonic settings with both long and short duration eruptions have all been listed here in regards with high frequency. Subduction zone / Continental crust ( >25km) is again positioned with the most times (21 times) of eruptions of high frequency, but this time followed by Intraplate / Oceanic crust ( <15km), where only 7 high and 15 short duration eruptions are marked. Rift zone / Oceanic crust ( <15km), placing with the least eruptions of high frequency, actually has 30 times of short duration eruptions which is considered quite high.
+
+```{r jfb1, message=FALSE, warning=FALSE, echo=FALSE}
 # keep
 bhftectplot <- btect0 %>% 
   filter(!is.na(tectonic_settings)) %>%
@@ -318,7 +306,7 @@ bhftectplot <- btect0 %>%
 bhftectplot
 ```
 
-```{r}
+```{r, include=FALSE, warning=FALSE, message=FALSE, echo=FALSE}
 # keep
 hl_tect <- eruptions %>%
   na.exclude(vei) %>%
@@ -336,7 +324,7 @@ Reflecting on one of the findings, as the tectonic setting where most longer ( >
 Overall, with the highest VEI average (2.667), neither long duration eruptions ( >365 days), nor high frequency (≥ 2 eruptions in 1 year) eruptions are found in Rift zone / Intermediate crust (15-25 km), while only one eruption of short duration ( <30 days) occurs in this setting.
 On the opposite, with the lowest ranking for average VEI (0.923), volcanoes on the Intraplate / Oceanic crust ( <15 km) don't tend to erupt with long duration ( >365 days) where it’s long duration eruption only holds 4.575%, compared with other tectonic settings. Nevertheless, it has a greater percentage for both short duration (5.033%) and high frequency (9.677%) eruptions.
 
-```{r jtt1}
+```{r jtt1, echo=FALSE, message=FALSE}
 tect_avg <- kable(hl_tect, caption = "Average VEI level for each tectonic setting")
 tect_avg
 ```
