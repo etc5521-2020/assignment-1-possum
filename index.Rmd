@@ -105,8 +105,13 @@ vei_du %>%
 a1 <- tapply(vei_du$duration, vei_du$vei, summary)
 a5num1 <- list2DF(a1) %>%
   mutate(`VEI` = print(c("Min", "Q1", "Median", "Mean", "Q3", "Max"))) 
+```
+
+```{r}
 a5num1k <- kable(a5num1, caption = "Five number summary and mean of duration for each VEI")
+```
 # keep
+```{r}
 abox <- ggplot(vei_du, aes(x = as.factor(vei), y = duration, color = vei)) +
   geom_boxplot(outlier.shape = NA) +
   coord_flip() +
@@ -114,15 +119,16 @@ abox <- ggplot(vei_du, aes(x = as.factor(vei), y = duration, color = vei)) +
   labs(title = "Five number summary distribtuion for VEI level from 0 to 6",
        x = "VEI",
        y = "Eruption duration (Days)")
+```
 
-vei_du %>%
-  select(vei, duration) %>%
-  lm(vei ~ ., data = .)
+```{r}
 # keep, but trim outliers
 a2 <- vei_du %>%
   select(duration, vei) %>%
   lm(duration ~ ., data = .)
+```
 
+```{r}
 alm <- ggplot(vei_du, aes(x = vei, y = duration)) +
   geom_point() +
   geom_smooth(method = "lm") +
@@ -147,6 +153,9 @@ ajoin3 <- a3 %>%
     select(volcano_number, volcano_name, vei, tectonic_settings) %>%
     count(tectonic_settings) %>%
     mutate(Percentage = n/sum(n)*100)
+```
+
+```{r}  
 # keep
 altectplot <- atect3 %>% 
   filter(!is.na(tectonic_settings)) %>%
@@ -156,7 +165,8 @@ altectplot <- atect3 %>%
   labs(x = "Tectonic settings",
        y = "Count",
        title = "Tectonic settings with high duration ( >365 days) eruptions")
-
+```
+```{r}
 a4 <- vei_du %>%
   filter(duration < 30) %>%
   count(volcano_number, volcano_name, latitude, longitude, vei) %>%
@@ -173,6 +183,9 @@ atect4 <- ajoin4 %>%
   select(volcano_number, volcano_name, vei, tectonic_settings) %>%
   count(tectonic_settings) %>%
   mutate(Percentage = n/sum(n)*100)
+```
+
+```{r}
 # keep
 astectplot <- atect4 %>% 
   filter(!is.na(tectonic_settings)) %>%
@@ -182,6 +195,9 @@ astectplot <- atect4 %>%
    labs(x = "Tectonic settings",
        y = "Count",
        title = "Tectonic settings with short duration ( ≤30 days) eruptions")
+```
+
+```{r}
 # keep
 a5 <- rbind(a3, a4)
 make_bbox(lon = a5$longitude, 
@@ -221,7 +237,9 @@ b0 <- eruptions %>%
 bjoin0 <- b0 %>%
   select(volcano_number, volcano_number, vei, `Total eruption`) %>%
   left_join(volcano) 
+```
 
+```{r}
  pal1 <- colorFactor(
   palette = c('yellow', 'orange', 'red', 'dark red'),
   domain = b0$vei
@@ -242,9 +260,9 @@ b0_locations = leaflet(data = b0) %>%
    addLegend(pal = pal1, values = ~vei, opacity = 1, 
             title = "VEI level", position = "bottomright") %>%   addProviderTiles("CartoDB.Positron")
 b0_locations 
- 
-head(b0, 5)
+```
 
+```{r}
 # erupt twice or more within a year
 bjoin0 <- b0 %>%
   ungroup(vei, start_year) %>%
@@ -263,6 +281,9 @@ bmean0 <- b0 %>%
   ungroup(vei, start_year) %>%
   filter(n >= 2) %>%
   summarise(mean(vei))
+```
+
+```{r}
 # keep
 bhftectplot <- btect0 %>% 
   filter(!is.na(tectonic_settings)) %>%
@@ -284,8 +305,11 @@ hl_tect <- eruptions %>%
   group_by(tectonic_settings) %>%
   summarise(`Avg vei` = round(mean(vei), digits = 3)) %>%
   arrange(desc(`Avg vei`)) 
+```
 
-kable(hl_tect, caption = "Average VEI level for each tectonic setting")
+```{r}
+tect_avg <- kable(hl_tect, caption = "Average VEI level for each tectonic setting")
+tect_avg
 ```
 
 
