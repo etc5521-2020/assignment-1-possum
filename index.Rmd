@@ -122,6 +122,7 @@ volcano_types %>%
 unique(volcano_types$primary_volcano_type)
 ```
 
+
 ### World Map of Active Volcanoes erupt
 
 ```{r volcano-erupted, include = FALSE}
