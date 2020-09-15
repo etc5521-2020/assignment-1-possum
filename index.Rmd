@@ -779,11 +779,12 @@ eruptions_1812_pdf <- eruptions_1812_pdf %>%
                       quantile_lines = TRUE,
                       vline_color = "red",
                       vline_size = 1.5,
-                      quantiles = 0.5,
+                      quantiles = 0.5#,
                       # add jittered points
-                      jittered_points = TRUE,
-                      alpha = 0.7,
-                      position = "raincloud") +
+                      # jittered_points = TRUE,
+                      # alpha = 0.7,
+                      # position = "raincloud"
+                      ) +
   scale_x_continuous(breaks = seq(from = 0, to = 70, by = 5 )) +
   ylab("VEI") +
   xlab("number of eruptions") +
@@ -823,7 +824,7 @@ grid.arrange(eruptions_1812_pdf, t1, ncol = 2,
 
 ```
 
-We filtered the data set to from present to after 1812 - where the last observed VEI 7 was recorded at Mount Tambora and plotted a density plot of VEI against the number of eruptions. Under the plot represents the number of volcanoes with the corresponding number of eruptions (slightly jittered). 
+We filtered the data set to from present to after 1812 - where the last observed VEI 7 was recorded at Mount Tambora and plotted a density plot of VEI against the number of eruptions.  
 
 The density plots above shows that likelihood of a volcano with VEI 4 or above is very unlikely (less than 1). In fact, almost 98% of all volcanoes have less than VEI-3. 
 
@@ -1096,7 +1097,8 @@ altectplot <- atect3 %>%
        y = "Count",
        title = "Tectonic settings with long duration ( >365 days) eruptions") +
   theme(plot.title = element_text(size = 14,
-                                  face = "bold"))
+                                  face = "bold"),
+        axis.text.y.left = element_text(size = 20))
 ```
 
 ```{r, include=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
@@ -1129,7 +1131,8 @@ astectplot <- atect4 %>%
        y = "Count",
        title = "Tectonic settings with short duration ( <30 days) eruptions") +
   theme(plot.title = element_text(size = 14,
-                                  face = "bold"))
+                                  face = "bold"),
+        axis.text.y.left = element_text(size = 20))
 ```
 
 ```{r jcbplot, message=FALSE, warning=FALSE, echo=FALSE, fig.align="center", fig.width=14, fig.height = 10}
@@ -1160,7 +1163,7 @@ a5_locations = leaflet(data = a5) %>%
     radius = 10,
     fill=TRUE, color= ~pal(`Duration category`),
     weight= 10,
-    stroke = FALSE, fillOpacity = 0.8,
+    stroke = FALSE, fillOpacity = 500,
     label = a5$volcano_name) %>%
    addTiles() %>%
    addLegend(pal = pal, values = ~`Duration category`, opacity = 1, 
@@ -1246,7 +1249,8 @@ bhftectplot <- btect0 %>%
        y = "Count",
        title = "Tectonic settings with high frequency ( ≥2 eruptions in 1 year) eruptions") +
   theme(plot.title = element_text(face = "bold",
-                                  size = 14))
+                                  size = 14),
+        axis.text.y.left = element_text(size = 15))
 
 bhftectplot
 ```
@@ -1277,6 +1281,8 @@ tect_avg <- kable(hl_tect, caption = "Average VEI level for each tectonic settin
 
 tect_avg
 ```
+
+
 
 
 # References
