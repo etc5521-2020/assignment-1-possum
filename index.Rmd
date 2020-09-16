@@ -1319,7 +1319,7 @@ euro_list_clean <- euro_list %>%
 
 ```
 
-```{r tree-ring, out.width = '120%', fig.cap = "Tree ring z-score and temperature index"}
+```{r tree-ring, out.width = '150%', fig.cap = "Tree ring z-score and temperature index"}
 tree_ring_clean <- tree_rings %>% 
   filter(!is.na(year))
 
@@ -1328,7 +1328,8 @@ tree_ring_clean %>%
   ggplot(aes(x = year, y = value, color = type)) +
   geom_line(alpha = 0.5)+
   geom_vline(xintercept = euro_list_clean[,2], linetype = "dashed") +
-  theme(legend.title = element_blank())
+  theme(legend.title = element_blank(),
+        legend.position = "bottom")
 
 
 ```
@@ -1339,25 +1340,29 @@ cor.test(tree_ring_clean$n_tree, tree_ring_clean$europe_temp_index) %>% tidy() %
 ```
 
 We build two linear models: 
-$$\large{lm\_1} :\large{\widehat{\text{Tree ring z-score}}} = -0.3411 + 1.2732  \text{Europe temp index}$$
+$$\large{lm\_1} :\large{\widehat{\text{Europe temp index}}} = 0.1073 + 0.4941 * \text{Tree ring z-score}$$
 
-$$\large{lm\_2} :\large{\widehat{\text{Tree ring z-score}}} = -0.3424 + 1.2726  \text{Europe temp index} + 0.1212 \text{Eruption}$$
+$$\large{lm\_2} :\large{\widehat{\text{Europe temp index}}} = 0.10765 + 0.49421 * \text{Tree ring z-score} - 0.02598 * \text{Eruption}$$
 In `lm_2`, for `eruption`, 1 means there was an eruption while 0 means none.
 
+Table \@ref(tab:lmtreering) shows the goodness of two models. `lm_2` is slightly better than `lm_1` because its $r^2$ is slightly greater than `lm_1`'s $r^2$. In conclusion, both of them are not good because of low `r_square`. For example, `lm_1` has $r^2$ of 0.6287, which means only 62.87% of variation explained by the model. The reason might be an eruption has its radius of influence, and most of the eruptions were in Russia, thus, they did not have big influence in Europe temperature index. In addition, even there was a big eruption, it can hardly affect the whole Europe or the yearly average temperature index.  
 
+To visulising the fittness of `lm_2`, we plot the residual value based on `lm_2`. Residual value refers to the difference between observed and predicted value. If a model is a good model, the residual value would close to y intercept. Fig \@ref(fig:lm_2_resid) shows the residual value spread, and variation of residual value is increasing while the temperature index is more far away from 0. This means, in some degree, `lm_2` can predict the `europe_temp_index` under non-extreme value of `n_tree`.
 
 ```{r lmtreering}
+# insert the eruption variable into the tree ring dataset
 tree_ring_clean <- tree_ring_clean %>% 
+  # eruption = 1 means there was an eruption, eruption = 0 means none eruption.
   mutate(eruption = case_when(
     year %in% euro_list_clean[,2] ~ 1,
     TRUE ~ 0
   ),
   eruption = as.factor(eruption))
 
-tree_lm_1 <- lm(n_tree ~ europe_temp_index, data = tree_ring_clean)
-tree_lm_2 <- lm(n_tree ~ europe_temp_index +eruption, data = tree_ring_clean)
+tree_lm_1 <- lm(europe_temp_index ~ n_tree, data = tree_ring_clean)
+tree_lm_2 <- lm(europe_temp_index ~ n_tree +eruption, data = tree_ring_clean)
 
-tibble(model = c("lm1(no eruption)", "lm2(eruption)"), r_square = c(glance(tree_lm_1)[[2]],
+tibble(model = c("lm_1 (no eruption)", "lm_2 (eruption)"), r_square = c(glance(tree_lm_1)[[2]],
 glance(tree_lm_2)[[2]])) %>% kable(caption = "Compare two models") %>% 
   kable_styling(bootstrap_options = "striped", full_width = F, position = "center")
 ```
@@ -1365,11 +1370,12 @@ glance(tree_lm_2)[[2]])) %>% kable(caption = "Compare two models") %>%
 
 
 
-```{r}  
+```{r lm_2_resid, fig.cap = "Residual lm_2"}  
 augment(tree_lm_2) %>% 
-  ggplot(aes(x = n_tree, y = .resid)) +
+  ggplot(aes(x = europe_temp_index, y = .resid)) +
   geom_point() +
-  geom_hline(yintercept = 0, color = 'red')
+  geom_hline(yintercept = 0, color = 'red') +
+  geom_smooth(method = "glm")
 ```
 
 
