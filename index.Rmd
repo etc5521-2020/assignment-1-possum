@@ -33,6 +33,7 @@ library(sf)
 library(data.table)
 library(ggthemes)
 library(maps)
+library(patchwork)
 ```
 
 
@@ -739,6 +740,100 @@ Above shows plot with fill depending on the number of eruptions in each country 
 
 Prominent countries(shaded orange) with the most active volcanoes lie on the Ring Of Fire.
 
+## How sulfate levels and eruption cycles can be used to predict climate change?
+
+```{r}
+#fitlering tree ring for appropriate date range to compare with sulfate levels
+#ce refers to the time period 
+t_rings_ce <- tree_rings %>%
+  filter(year >= 500 & year <= 730)
+
+
+#combinig volcano dataset with eruptions to produce a data set that shows the volcano details for the eruptions that took place during the recorded sulfate time frame
+eruptions_ce <- eruptions %>%
+  filter(start_year >= 500 & start_year <= 730)
+
+volcano_eruptions_ce <- eruptions_ce %>%
+  inner_join(volcano, by = "volcano_number") %>%
+  select(volcano_number, volcano_name.x, eruption_category, start_year, primary_volcano_type, country, region, subregion, latitude.x, longitude.x, elevation, vei) %>%
+  rename(latitude = latitude.x,
+         longitude = longitude.x,
+         volcano_name = volcano_name.x) 
+
+#add north or south hemisphere to table
+volcano_eruptions_hemisphere <- volcano_eruptions_ce %>%
+  mutate(hemisphere = 
+           case_when(latitude > 0 ~ "Northern",
+                     latitude < 0 ~ "Southern")) %>%
+  select(volcano_name, eruption_category, start_year, country, hemisphere, vei, primary_volcano_type) %>%
+  rename(year = start_year)
+```
+
+```{r plot-variables}
+sulfur %>%
+  ggplot(aes(x = neem,
+             y = wdc,
+             fill = year)) +
+  geom_point() +
+  scale_colour_gradient(low = "red", high = "blue", aesthetics = "fill")
+
+
+
+p1 <- sulfur %>%
+  ggplot(aes(x = year,
+             y = neem)) +
+  geom_line() 
+
+p2 <- sulfur %>%
+  ggplot(aes(x = year,
+             y = wdc)) +
+  geom_line()
+
+tree_rings_long <- t_rings_ce %>%
+  pivot_longer(c("n_tree", "europe_temp_index"),
+               names_to = "index",
+               values_to = "value") 
+
+t1 <- tree_rings_long %>%
+  ggplot(aes(x = year,
+             y = value,
+             colour = index)) +
+  geom_line()
+
+volcano_vei_4_north <- volcano_eruptions_hemisphere %>% 
+  filter(vei >= 4,
+         hemisphere == "Northern")
+
+```
+
+```{r plot}
+p2 + p1 + t1 + plot_layout(nrow = 3)
+```
+
+```{r scatmat}
+sulfur_yearly_means <- sulfur %>%
+  mutate(year_ce = str_sub(year, start = 0, end = 3)) %>%
+  select(-year) %>%
+  rename(year = year_ce) %>%
+  group_by(year) %>%
+  summarise(mean_neem = mean(neem),
+            mean_wdc = mean(wdc)) %>%
+  mutate(year = as.numeric(year))
+
+volcano_eruptions_hemisphere_short <- volcano_eruptions_hemisphere %>%
+  select(year, hemisphere)
+
+rings_sulfur_volcano <- t_rings_ce %>%
+  left_join(sulfur_yearly_means, by ="year") %>%
+  left_join(volcano_eruptions_hemisphere_short, by = "year") %>%
+  mutate(wdc_log = log10(mean_wdc),
+         neem_log = log10(mean_neem)) %>%
+  select(-mean_neem, -mean_wdc, -hemisphere)
+
+rings_sulfur_volcano %>%
+  filter(year <= 705) %>%
+  ggscatmat(columns = 2:5)
+```
 
 ### How likely will a volcano erupting in each VEI category after 1812?
 
