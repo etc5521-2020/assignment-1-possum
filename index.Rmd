@@ -6,8 +6,10 @@ author:
   - Brenwin Ang 31430759
   - Joyce Lee 31114229
 date: "`r Sys.Date()`"
+bibliography: references.bib
+biblio-style: authoryear-comp
 output: 
-  html_document
+  bookdown::html_document2
 ---
 
 [This assignment is for ETC5521 Assignment 1 by Team `r rmarkdown::metadata$team` comprising of `r knitr::combine_words(rmarkdown::metadata$author)`.]{style="color:#006DAE;"}
@@ -1143,7 +1145,7 @@ grid.arrange(altectplot, astectplot)
 
 The map plots the locations of the volcanoes, categorised by their duration of eruptions. It can be easily observed that volcanoes with short duration eruptions are more concentrated, so are more likely to form into a "line" shape. On the other hand volcanoes with long durations seem to be more dispersed. Looking at them as a whole, volcanoes are mainly located in coastline areas.
 
-```{r jma1, message=FALSE, echo=FALSE, eval = TRUE}
+```{r jma1, message=FALSE, echo=FALSE, eval = FALSE}
 a5 <- rbind(a3, a4)
 
 bbox <- make_bbox(lon = a5$longitude, 
@@ -1190,7 +1192,7 @@ bjoin0 <- b0 %>%
 ### World map of eruption based on VEI level
 This map captures the volcanoes that have erupted from year to year according to their respective VEI level.
 
-```{r jma2, message=FALSE, warning=FALSE, echo=FALSE, eval = TRUE}
+```{r jma2, message=FALSE, warning=FALSE, echo=FALSE, eval = FALSE}
  pal1 <- colorFactor(
   palette = c('yellow', 'orange', 'red', 'dark red'),
   domain = b0$vei
@@ -1282,111 +1284,97 @@ tect_avg <- kable(hl_tect, caption = "Average VEI level for each tectonic settin
 tect_avg
 ```
 
+# Assignment 2 Extra questions
 
+## Is there any relationship between tree rings and volcanic eruption events?
+
+Tree ring is an important indicator to reveal climate and temperature change. 
+
+```{r eruptions-in-euro}
+library(rvest)
+library(plotly)
+euro_list <- read_html("https://en.wikipedia.org/wiki/List_of_European_countries_by_area") %>% 
+  html_table(fill = TRUE)
+
+euro_list <- euro_list[[1]] %>% 
+  select(State) %>% 
+  mutate(State = stringr::str_remove(State, "\\*"))
+
+euro_list_clean <- euro_list %>% 
+  left_join(volcano_erupted, by = c("State" = "country")) %>% 
+  select(State, start_year, end_year) %>% 
+  filter(start_year %in% c(1:2000))
+
+```
+
+```{r tree-ring, out.width = '120%', fig.cap = "Tree ring z-score and temperature index"}
+tree_ring_clean <- tree_rings %>% 
+  filter(!is.na(year))
+
+tree_ring_plot <- tree_ring_clean %>% 
+  ggplot(aes(x = year, y = n_tree)) +
+  geom_line(size = 0.5, alpha = 0.5) +
+  geom_line(aes(x = year, y = europe_temp_index), color = 'red') +
+  geom_vline(xintercept = euro_list_clean[,2], linetype = "dashed")
+
+ggplotly()
+```
+
+```{r lm_tree_ring}
+tree_ring_clean <- tree_ring_clean %>% 
+  mutate(eruption = case_when(
+    year %in% euro_list_clean[,2] ~ 1,
+    TRUE ~ 0
+  ),
+  eruption = as.factor(eruption))
+
+tree_lm_1 <- lm(n_tree ~ europe_temp_index, data = tree_ring_clean)
+tree_lm_2 <- lm(n_tree ~ europe_temp_index +eruption, data = tree_ring_clean)
+
+tibble(model = c("lm1(no eruption)", "lm2(eruption)"), r_square = c(glance(tree_lm_1)[[2]],
+glance(tree_lm_2)[[2]])) %>% kable(caption = "Compare two models, lm1 does not consider the effect of eruption") %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left")
+  
+augment(tree_lm_2) %>% 
+  ggplot(aes(x = n_tree, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, color = 'red')
+```
+
+
+# Acknowledgements
+
+These packages are used to produce this report:
+
+tidyverse [@tidyverse], lubridate [@lubridate], broom [@broom], leaflet [@leaflet], ggmap [@ggmap], mapview[@mapview], viridis [@viridis], rgdal [@rgdal], kableExtra [@kableExtra], gridExtra [@gridExtra], readr [@readr], knitr [@knitr], sf [@sf], data.table [@data], ggthemes [@ggthemes], maps [@maps], ggridges [@ggridges], rvest [@rvest], plotly [@plotly]
 
 
 # References
 
 
 ```{r, include = FALSE}
-citation("tidyverse")
-citation("lubridate")
-citation("broom")
-citation("leaflet")
-citation("ggmap")
-citation("mapview")
-citation("viridis")
-citation("rgdal")
-citation("kableExtra")
-citation("gridExtra")
-citation("readr")
-citation("knitr")
-citation("sf")
-citation("data.table")
-citation("ggthemes")
-citation("maps")
+# citation("tidyverse")
+# citation("lubridate")
+# citation("broom")
+# citation("leaflet")
+# citation("ggmap")
+# citation("mapview")
+# citation("viridis")
+# citation("rgdal")
+# citation("kableExtra")
+# citation("gridExtra")
+# citation("readr")
+# citation("knitr")
+# citation("sf")
+# citation("data.table")
+# citation("ggthemes")
+# citation("maps")
+
+# library(rvest)
+# library(plotly)
+# library(ggridges)
 ```
 
-Baptiste Auguie (2017). gridExtra: Miscellaneous Functions for "Grid"
-  Graphics. R package version 2.3.
-  https://CRAN.R-project.org/package=gridExtra
-  
-David Robinson, Alex Hayes and Simon Couch (2020). broom: Convert
-  Statistical Objects into Tidy Tibbles. R package version 0.7.0.
-  https://CRAN.R-project.org/package=broom
-  
-D. Kahle and H. Wickham. ggmap: Spatial Visualization with ggplot2. The
-  R Journal, 5(1), 144-161. URL
-  http://journal.r-project.org/archive/2013-1/kahle-wickham.pdf  
-
-Garrett Grolemund, Hadley Wickham (2011). Dates and Times Made Easy
-  with lubridate. Journal of Statistical Software, 40(3), 1-25. URL
-  http://www.jstatsoft.org/v40/i03/.
-  
-Hadley Wickham, Jim Hester and Romain Francois (2018). readr: Read
-  Rectangular Text Data. R package version 1.3.1.
-  https://CRAN.R-project.org/package=readr
-  
-Hao Zhu (2019). kableExtra: Construct Complex Table with 'kable' and
-  Pipe Syntax. R package version 1.1.0.
-  https://CRAN.R-project.org/package=kableExtra
-  
-Jeffrey B. Arnold (2019). ggthemes: Extra Themes, Scales and Geoms for
-  'ggplot2'. R package version 4.2.0.
-  https://CRAN.R-project.org/package=ggthemes
-  
-Joe Cheng, Bhaskar Karambelkar and Yihui Xie (2019). leaflet: Create
-  Interactive Web Maps with the JavaScript 'Leaflet' Library. R package
-  version 2.0.3. https://CRAN.R-project.org/package=leaflet
-  
-Matt Dowle and Arun Srinivasan (2020). data.table: Extension of
-  `data.frame`. R package version 1.13.0.
-  https://CRAN.R-project.org/package=data.table
-  
-National Geographic. (n.d.). Ring of Fire. Retrieved from https://www.nationalgeographic.org/encyclopedia/ring-fire/
-  
-Original S code by Richard A. Becker, Allan R. Wilks. R version by Ray
-  Brownrigg. Enhancements by Thomas P Minka and Alex Deckmyn. (2018).
-  maps: Draw Geographical Maps. R package version 3.3.0.
-  https://CRAN.R-project.org/package=maps
-
-Pebesma, E., 2018. Simple Features for R: Standardized Support for
-  Spatial Vector Data. The R Journal 10 (1), 439-446,
-  https://doi.org/10.32614/RJ-2018-009  
-
-Roger Bivand, Tim Keitt and Barry Rowlingson (2020). rgdal: Bindings
-  for the 'Geospatial' Data Abstraction Library. R package version
-  1.5-15. https://CRAN.R-project.org/package=rgdal
-
-Safety on volcanoes: risk zones around volcanoes. (2020). Retrieved 28 August 2020, from https://www.volcanodiscovery.com/volcanic_risk_zones.html#:~:text=4)%20Low%20Risk%20Zone&text=Typically%20you%20are%20more%20than,pyroclastic%20flows%20could%20be%20channeled.
-
-Sigurdsson, H., Houghton, B., McNutt, S., Rymer, H., & Stix, J. (Eds.). (2015). The encyclopedia of volcanoes. Elsevier.
-  
-Simon Garnier (2018). viridis: Default Color Maps from 'matplotlib'. R
-  package version 0.5.1. https://CRAN.R-project.org/package=viridis
-  
-  Tectonic Plate Boundaries. (2020). Retrieved 28 August 2020, from https://www.kaggle.com/cwthompson/tectonic-plate-boundaries
-
-Tim Appelhans, Florian Detsch, Christoph Reudenbach and Stefan
-  Woellauer (2020). mapview: Interactive Viewing of Spatial Data in R. R
-  package version 2.9.0. https://CRAN.R-project.org/package=mapview
-  
-Wickham et al., (2019). Welcome to the tidyverse. Journal of Open
-  Source Software, 4(43), 1686, https://doi.org/10.21105/joss.01686  
-  
-  Wikipedia. (n.d.). Volcanic Explosivity Index. Retrieved from https://en.wikipedia.org/wiki/Volcanic_Explosivity_Index
-  
-Yihui Xie (2020). knitr: A General-Purpose Package for Dynamic Report
-  Generation in R. R package version 1.29.
-
-Yihui Xie (2015) Dynamic Documents with R and knitr. 2nd edition.
-  Chapman and Hall/CRC. ISBN 978-1498716963
-
-Yihui Xie (2014) knitr: A Comprehensive Tool for Reproducible Research
-  in R. In Victoria Stodden, Friedrich Leisch and Roger D. Peng, editors,
-  Implementing Reproducible Computational Research. Chapman and Hall/CRC.
-  ISBN 978-1466561595  
-  
 
   
 

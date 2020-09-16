@@ -25,3 +25,6 @@ data.table
 ggthemes
 maps
 ggridges
+xml2
+rvest
+plotly
