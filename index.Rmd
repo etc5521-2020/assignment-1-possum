@@ -189,7 +189,7 @@ plates2 <- lapply(seq_along(plates),
                  function(i) as.data.frame(plates[[i]][[1]]) %>% 
                    mutate(group = i)) %>%
   data.table::rbindlist() %>% 
-  rename(lon = V1, lat = V2)
+  rename(lon = V1, lat = V2) 
 ```
 
 
