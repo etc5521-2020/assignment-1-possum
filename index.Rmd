@@ -18,7 +18,8 @@ output:
 knitr::opts_chunk$set(echo = FALSE, 
                       warning = FALSE,
                       message = FALSE,
-                      cache = TRUE)
+                      cache = TRUE,
+                      fig.align = "center")
 library(tidyverse)
 library(lubridate)
 library(broom)
@@ -35,6 +36,7 @@ library(sf)
 library(data.table)
 library(ggthemes)
 library(maps)
+library(rvest)
 ```
 
 
@@ -152,7 +154,7 @@ volcano_erupted <- volcano_erupted %>%
   ungroup()
 ```
 
-```{r volcano-types-eruptions, fig.align="center"}
+```{r volcano-types-eruptions, fig.cap = "Number of eruptions for Primary Volcano Types"}
 # No. of eruptions by Volcano tyepes
 volcano_erupted %>% 
   group_by(primary_volcano_type) %>% 
@@ -166,7 +168,6 @@ volcano_erupted %>%
            fill = "orange") +
   labs(x = "Primary Volcano Types",
        y = "Number of eruptions") +
-  ggtitle("Number of eruptions for Primary Volcano Types") +
   theme_minimal() +
   theme(axis.text = element_text(colour = "white"),
         axis.title = element_text(colour = "white")) +
@@ -203,7 +204,7 @@ plates2 <- lapply(seq_along(plates),
 ```
 
 
-```{r world-map, fig.align = "center", fig.width=14, fig.height=8}
+```{r world-map, fig.cap = "Active Volcanoes and The Ring of Fire, and Tectonic Plates layourt across the globe", fig.width=14, fig.height=14}
 world <- map_data("world")
 
 # add continent coordinates
@@ -299,7 +300,7 @@ w2 <- world %>%
   theme(plot.title = element_text(size = 20, face = "bold", colour = "orange"),
         plot.subtitle = element_text(size = 16, colour = "orange")) 
   
-w1 + w2 + plot_layout(nrow = 2)
+grid.arrange(w1, w2, nrow = 2)
 
 ```
 
@@ -311,7 +312,7 @@ In order to map the tectonic boundaries the tectonic plates were split at the pr
 
 
 
-```{r ring-of-fire, fig.align="center", fig.height=8, fig.width=14}
+```{r ring-of-fire, fig.cap = "The Ring of Fire", fig.height=8, fig.width=14}
 # ---- fix longitude; recenter coordinates to center around ring of fire
 volcano_erupted <- volcano_erupted %>% 
   mutate(long_fixed = ifelse(longitude < 0, yes = longitude + 360, no = longitude)) %>% 
@@ -342,7 +343,6 @@ ggplot() +
   geom_text(data = countries_rof_coord,
             aes(x = long, y = lat, label = id),
             colour = "blue") +
-  ggtitle("The Ring of Fire") +
   labs(subtitle = "Pacific Rim Volcanoes with documented eruptions") +
   theme_map() +
   annotate("text", x = 200, y = 30,
@@ -438,7 +438,7 @@ pop_plot <- volcano_population_long %>%
 
 
 
-```{r triangles-fun, fig.align="center", fig.height=12, fig.width=18}
+```{r triangles-fun, fig.cap = "Population within 5, 10, 30, 100km from Volcano", fig.height=12, fig.width=18}
 dt.triangle <- data.table(group = c(1,1,1,
                                     2,2,2,
                                     3,3,3,
@@ -584,7 +584,6 @@ triangle <- ggplot() +
             aes(x = x, y = y, label = id),
             size = 8,
             colour = "white") +
-  ggtitle("Population within 5, 10, 30, 100km from Volcano") +
   theme_void() +
   theme(panel.background = element_rect(fill = "grey20"),
         plot.background = element_rect(fill = "grey20")) +
@@ -695,7 +694,7 @@ volcano_erupted %>%
 ```
 
 
-```{r volcano-countries, fig.height=8, fig.width=14}
+```{r volcano-countries, fig.cap = "World Map with countries experiencing most eruptions", fig.height=8, fig.width=14}
 # clean volcano$country to match world data set
 volcano_country <- volcano_erupted %>% 
   mutate(country = case_when(
@@ -733,7 +732,16 @@ volcano_country_join <- left_join(world, volcano_country_count,
   # replace n = NA to 0
   mutate(n = ifelse(is.na(n), 0, n))
 
- pal2 <- colorFactor(
+b0 <- eruptions %>%
+  na.exclude(vei, start_year) %>%
+  group_by(start_year) %>%
+  select(volcano_number, volcano_name, vei, latitude, longitude, start_year) %>%
+  count(volcano_number, volcano_name, vei, latitude, longitude) %>%
+  arrange(desc(n)) 
+
+b0 <- b0 %>%mutate(`Total eruption` = sum(b0$n)) 
+
+pal2 <- colorFactor(
   palette = c('yellow', 'orange', 'red', 'dark red', "brown", "purple"),
   domain = b0$vei
 )
@@ -759,8 +767,7 @@ volcano_country_join %>%
             name = "Population Within 5km",
             breaks = c(100, 1000, 10000, 100000, 1000000, 40640105),
             labels = c("<=100", "101-1000", "1001-10,000", "10,001-100,000", "100,001-1,000,000", ">1,000,000")) +
-  ggtitle("World Map with countries experiencing most eruptions") +
-   theme(panel.background = element_rect(fill = "grey20"),
+  theme(panel.background = element_rect(fill = "grey20"),
         plot.background = element_rect(fill = "grey20"),
         legend.box.background = element_rect(fill = "grey20"),
         legend.text = element_text(colour = "white"),
@@ -847,8 +854,7 @@ eruptions_1812_pdf <- eruptions_1812_pdf %>%
                       ) +
   scale_x_continuous(breaks = seq(from = 0, to = 70, by = 5 )) +
   ylab("VEI") +
-  xlab("number of eruptions") +
-  ggtitle("Probability density function of eruptions in each VEI category")
+  xlab("number of eruptions")
 ```
 
 ```{r eruptions-1812-nsum}
@@ -873,7 +879,7 @@ eruptions_1812_nsum$vei <- str_c("< VEI-", eruptions_1812_nsum$vei )
 eruptions_1812_nsum <- eruptions_1812_nsum
 ```
 
-```{r plot-nsum, fig.align="center", fig.width = 13}
+```{r plot-nsum, fig.cap = "Probability density function of eruptions in each VEI category", fig.width = 13}
 # change table to tableGrob
 t1 <- tableGrob(eruptions_1812_nsum, theme=ttheme_minimal(), rows=NULL)
 
@@ -1018,7 +1024,6 @@ frequency_plot <- volcano_frequent_total %>%
                 y = volcano),
             fill = "red",
             colour = "black") +
-  ggtitle("Frequency of Most Active Volcanoes in each VEI category") +
   xlab("Year")+
   ylab("Volcano and VEI rating") +
   theme(plot.title = element_text(face = "bold",
@@ -1038,7 +1043,7 @@ t2$volcano <- factor(t2$volcano, levels = c("Kilauea-0", "Tambora-7","Krakatau-6
 ```
 
 
-```{r tile-plot, fig.align="center", fig.width = 13, warning = FALSE, message = FALSE, results='asis'}
+```{r tile-plot, fig.cap = "Frequency of Most Active Volcanoes in each VEI category", fig.width = 13, results='asis'}
 t2<- tableGrob(t2, theme=ttheme_minimal(), rows=NULL)
 
 grid.arrange(frequency_plot, t2, ncol = 2,
@@ -1055,7 +1060,7 @@ Figure \@ref(fig:tile-plot) displays the volcanoes with the largest count of eru
   - The gentler eruption events occur more frequently while more explosive eruptions are much less frequent. 
 
 
-```{r, include=FALSE, warning=FALSE, message=FALSE, echo=FALSE}
+```{r, include=FALSE, echo=FALSE}
 vei_du <- eruptions %>%
   na.exclude(vei, start_year, start_month, start_day, end_year, end_month, end_day) %>%
   select(everything()) %>%
@@ -1089,13 +1094,12 @@ a5num1k
 
 
 
-```{r jfa1, warning=TRUE, echo=FALSE, fig.align="center", fig.height=8, fig.width=14}
+```{r jfa1, warning=TRUE, echo=FALSE, fig.cap = "Five number summary distribtuion for VEI level from 0 to 6", fig.height=8, fig.width=14}
 abox <- ggplot(vei_du, aes(x = as.factor(vei), y = duration, color = "#FED8B1")) +
   geom_boxplot(outlier.shape = NA) +
   coord_flip() +
   scale_y_continuous(limits=c(-20,500), breaks=seq(0,1500,50), expand = c(0, 0)) +
-  labs(title = "Five number summary distribtuion for VEI level from 0 to 6",
-       x = "VEI",
+  labs(x = "VEI",
        y = "Eruption duration (Days)") +
   theme(legend.position = "none")
 
@@ -1113,7 +1117,7 @@ Figure \@ref(fig:jfa1) visualises the distribtuon of eruption day length for eac
   - VEI rating 6 has a maximum duration of 154 days which is lower then the maximum durations of VEI rating 1, 2, 3 and 4. 
 
 
-```{r, include=FALSE, message=FALSE, echo=FALSE}
+```{r, include=FALSE, echo=FALSE}
 # keep, but trim outliers
 a2 <- vei_du %>%
   select(duration, vei) %>%
@@ -1122,7 +1126,7 @@ a2 <- vei_du %>%
 
 
 
-```{r glm, fig.cap = "Goodness of fit measure for VEI and duration"}
+```{r glm}
 alm <- ggplot(vei_du, aes(x = vei, y = duration)) +
   geom_point() +
   geom_smooth(method = "lm") +
@@ -1130,7 +1134,7 @@ alm <- ggplot(vei_du, aes(x = vei, y = duration)) +
 aglm <- glance(a2) %>%
   select(r.squared, adj.r.squared)
 
-kable(aglm) %>% 
+kable(aglm, caption = "Goodness of fit measure for VEI and duration") %>%
   kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
@@ -1165,7 +1169,7 @@ ajoin3 <- a3 %>%
 
 
 
-```{r jfa2, include=FALSE, message=FALSE, warning=FALSE, echo=FALSE}  
+```{r jfa2, include=FALSE, echo=FALSE}  
 altectplot <- atect3 %>% 
   filter(!is.na(tectonic_settings)) %>%
   ggplot() + 
@@ -1180,7 +1184,7 @@ altectplot <- atect3 %>%
         axis.text.y.left = element_text(size = 20))
 ```
 
-```{r, include=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
+```{r, include=FALSE, echo=FALSE}
 a4 <- vei_du %>%
   filter(duration < 30) %>%
   count(volcano_number, volcano_name, latitude, longitude, vei) %>%
@@ -1199,7 +1203,7 @@ atect4 <- ajoin4 %>%
   mutate(Percentage = n/sum(n)*100)
 ```
 
-```{r jfa3, include=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
+```{r jfa3, include=FALSE, echo=FALSE}
 # keep
 astectplot <- atect4 %>% 
   filter(!is.na(tectonic_settings)) %>%
@@ -1215,7 +1219,7 @@ astectplot <- atect4 %>%
         axis.text.y.left = element_text(size = 20))
 ```
 
-```{r jcbplot, message=FALSE, warning=FALSE, echo=FALSE, fig.align="center", fig.width=14, fig.height = 10, fig.cap = "Eruption duration across the range of tectonic settings"}
+```{r jcbplot, echo=FALSE, fig.align="center", fig.width=14, fig.height = 10, fig.cap = "Eruption duration across the range of tectonic settings"}
 grid.arrange(altectplot, astectplot)
 ```
 
@@ -1233,18 +1237,16 @@ Moreover, comparing the count figures, it is apparent that every number from lon
 
 
 ```{r frequency, include=FALSE, echo=FALSE}
-b0 <- eruptions %>%
-  na.exclude(vei, start_year) %>%
-  group_by(start_year) %>%
-  select(volcano_number, volcano_name, vei, latitude, longitude, start_year) %>%
-  count(volcano_number, volcano_name, vei, latitude, longitude) %>%
-  arrange(desc(n)) 
-
-b0 <- b0 %>%mutate(`Total eruption` = sum(b0$n)) 
-
 bjoin0 <- b0 %>%
   select(volcano_number, volcano_number, vei, `Total eruption`) %>%
   left_join(volcano) 
+
+btect0 <- bjoin0 %>%
+  select(volcano_number, volcano_name, tectonic_settings) %>%
+  group_by(tectonic_settings) %>%
+  count(tectonic_settings) %>%
+  ungroup() %>%
+  mutate(Percentage = n/sum(n)*100)
 ```
 
 
@@ -1252,7 +1254,7 @@ bjoin0 <- b0 %>%
 
 The following section will be analysing which how frequently each tectonic setting erupts, specifically assessing high frequency counts that involve two or more eruptions per year,
 
-```{r jfb1, message=FALSE, warning=FALSE, echo=FALSE, fig.height=8, fig.align="center", fig.width=12, fig.cap = "The high or low frequncies associated with the range of tectonic settings"}
+```{r jfb1, echo=FALSE, fig.height=8, fig.width=12, fig.cap = "The high or low frequncies associated with the range of tectonic settings"}
 # keep
 bhftectplot <- btect0 %>% 
   filter(!is.na(tectonic_settings)) %>%
@@ -1270,7 +1272,7 @@ bhftectplot <- btect0 %>%
 bhftectplot
 ```
 
-```{r, include=FALSE, warning=FALSE, message=FALSE, echo=FALSE}
+```{r, include=FALSE, echo=FALSE}
 # keep
 hl_tect <- eruptions %>%
   na.exclude(vei) %>%
@@ -1297,7 +1299,7 @@ On the opposite, with the lowest ranking for average VEI (0.923), volcanoes on t
 
 
 
-```{r jtt1, echo=FALSE, message=FALSE}
+```{r jtt1, echo=FALSE}
 tect_avg <- kable(hl_tect, caption = "Average VEI level for each tectonic setting") %>% kable_styling(bootstrap_options = c("striped", "hover"))
 
 tect_avg
@@ -1322,8 +1324,6 @@ First, we draw a plot for `n_tree` and `europe_temp_index`. Fig \@ref(fig:tree-r
 
 
 ```{r eruptions-in-euro}
-library(rvest)
-library(plotly)
 euro_list <- read_html("https://en.wikipedia.org/wiki/List_of_European_countries_by_area") %>% 
   html_table(fill = TRUE)
 
