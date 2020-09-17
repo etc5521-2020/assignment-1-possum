@@ -767,109 +767,84 @@ volcano_eruptions_hemisphere <- volcano_eruptions_ce %>%
                      latitude < 0 ~ "Southern")) %>%
   select(volcano_name, eruption_category, start_year, country, hemisphere, vei, primary_volcano_type) %>%
   rename(year = start_year)
-```
-
-```{r plot-variables}
-sulfur %>%
-  ggplot(aes(x = neem,
-             y = wdc,
-             fill = year)) +
-  geom_point() +
-  scale_colour_gradient(low = "red", high = "blue", aesthetics = "fill")
-
-
-
-p1 <- sulfur %>%
-  ggplot(aes(x = year,
-             y = neem)) +
-  geom_line() 
-
-p2 <- sulfur %>%
-  ggplot(aes(x = year,
-             y = wdc)) +
-  geom_line()
 
 tree_rings_long <- t_rings_ce %>%
   pivot_longer(c("n_tree", "europe_temp_index"),
                names_to = "index",
                values_to = "value") %>%
   mutate(year_ce = year + .990)
+```
+
+```{r plot-variables}
+p1 <- sulfur %>%
+  mutate(year = as.numeric(year)) %>%
+  ggplot(aes(x = year,
+             y = neem)) +
+  geom_line() +
+  scale_y_continuous(breaks = seq(0, 200, 25)) +
+  geom_vline(xintercept = c(540, 575, 682), colour ="blue") +
+  geom_vline(xintercept = c(520, 536, 574, 627, 550), colour ="green") +
+  labs(title = "Greenland NEEM Ice Core Sulfur Depositions",
+       x = "Sulfur ng/g ",
+       y = "Year") +
+  theme_linedraw()
+
+p2 <- sulfur %>%
+  ggplot(aes(x = year,
+             y = wdc)) +
+  geom_line() +
+  scale_y_continuous(breaks = seq(0, 200, 25)) +
+  geom_vline(xintercept = c(540, 575, 682), colour ="blue") +
+  geom_vline(xintercept = c(683, 690, 653, 550), colour = "red") +
+  labs(title = "Antaric WDC Ice Core Sulfur Depositions",
+       x = "Year",
+       y = "Sulfur ng/g") +
+  theme_linedraw()
+  
 
 t1 <- tree_rings_long %>%
   filter(year <= 706)  %>%
   ggplot(aes(x = year_ce,
              y = value,
              colour = index)) +
-  geom_line()
-
+  geom_line() +
+  scale_color_viridis_d() +
+  geom_vline(xintercept = c(540, 575, 682), colour ="blue") +
+  geom_vline(xintercept = c(520, 536, 574, 627, 550), colour ="green") +
+  geom_vline(xintercept = c(683, 690, 653), colour = "red") +
+  labs(title = "European Weather Index and Tree Ring Z-scores",
+       x = "year",
+       y = "Temp index/Z-score") +
+  theme_linedraw()
 ```
 
-```{r plot}
+
+
+```{r plot, fig.cap = "Time series of the sulfur events that have been recorded in Greenland and Antartica and the European weather index and Tree Ring Z-Score", fig.width = 12}
 p2 + p1 + t1 + plot_layout(nrow = 3)
 ```
 
-
-
-```{r scatmat}
-sulfur_yearly_means <- sulfur %>%
-  mutate(year_ce = str_sub(year, start = 0, end = 3)) %>%
-  select(-year) %>%
-  rename(year = year_ce) %>%
-  group_by(year) %>%
-  summarise(mean_neem = mean(neem),
-            mean_wdc = mean(wdc)) %>%
-  mutate(year = as.numeric(year))
-
-volcano_eruptions_hemisphere_short <- volcano_eruptions_hemisphere %>%
-  select(year, hemisphere)
-
-rings_sulfur_volcano <- t_rings_ce %>%
-  left_join(sulfur_yearly_means, by ="year") %>%
-  left_join(volcano_eruptions_hemisphere_short, by = "year") %>%
-  mutate(wdc_log = log10(mean_wdc),
-         neem_log = log10(mean_neem)) %>%
-  select(-mean_neem, -mean_wdc, -hemisphere)
-
-rings_sulfur_volcano %>%
+```{r violin-plot, fig.cap = "Figure displaying the distribution of eruptions with a VEI rating of 4 or greater"}
+volcano_vei_ce <- volcano_eruptions_hemisphere_4 %>% 
   filter(year <= 705) %>%
-  ggscatmat(columns = 2:5)
+  ggplot(aes(x = as.factor(vei),
+             y = year,
+             color = as.factor(vei))) +
+  geom_violin() +
+  facet_wrap(~hemisphere) +
+  geom_point() +
+  labs(title = "Distribution of VEI-4+ eruptions",
+       x = "VEI Rating",
+       y = "Year",
+       color = "VEI") +
+  scale_y_continuous(breaks = seq(500, 7010, 10)) +
+  theme_linedraw()
+volcano_vei_ce
 ```
 
-```{r pct_change}
-percent_change <- t_rings_ce %>%
-  left_join(sulfur_yearly_means, by ="year") %>%
-  arrange(year) %>%
-  filter(year <= 705) %>%
-  mutate(n_tree_pct_change = (n_tree/lag(n_tree) - 1)*100,
-         euro_temp_pct_change = (europe_temp_index/lag(europe_temp_index) - 1)*100,
-         mean_neem_pct_change = (mean_neem/lag(mean_neem ) - 1)*100,
-         mean_wdc_pct_change = (mean_wdc/lag(mean_wdc) - 1)*100)
 
-percent_change %>%
-  select(year, n_tree_pct_change, euro_temp_pct_change, mean_neem_pct_change, mean_wdc_pct_change) %>%
-  pivot_longer(c("n_tree_pct_change", "euro_temp_pct_change", "mean_neem_pct_change", "mean_wdc_pct_change"),
-               names_to = "index",
-               values_to = "value") %>%
-  ggplot(aes(x = year,
-             y = value,
-             color = index)) +
-  geom_line()
 
-sulfur %>%
-  arrange(year) %>%
-  mutate(neem_pct_change = (neem/lag(neem ) - 1)*100,
-         wdc_pct_change = (wdc/lag(wdc) - 1)*100) %>%
-  ggplot(aes(x = year,
-             y = neem_pct_change)) +
-  geom_line()
 
-t_rings_ce %>%
-  arrange(year) %>%
-  filter(year <= 705) %>%
-  mutate(n_tree_pct_change = (n_tree/lag(n_tree) - 1)*100) %>%
-  
-
-```
 
 ### How likely will a volcano erupting in each VEI category after 1812?
 
