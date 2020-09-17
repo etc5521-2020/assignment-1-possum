@@ -795,7 +795,9 @@ tree_rings_long <- t_rings_ce %>%
                values_to = "value") 
 
 t1 <- tree_rings_long %>%
-  ggplot(aes(x = year,
+  filter(year <= 706) %>%
+  mutate(year_ce = year + .990) %>%
+  ggplot(aes(x = year_ce,
              y = value,
              colour = index)) +
   geom_line()
@@ -809,6 +811,8 @@ volcano_vei_4_north <- volcano_eruptions_hemisphere %>%
 ```{r plot}
 p2 + p1 + t1 + plot_layout(nrow = 3)
 ```
+
+
 
 ```{r scatmat}
 sulfur_yearly_means <- sulfur %>%
@@ -833,6 +837,28 @@ rings_sulfur_volcano <- t_rings_ce %>%
 rings_sulfur_volcano %>%
   filter(year <= 705) %>%
   ggscatmat(columns = 2:5)
+```
+
+```{r pct_change}
+percent_change <- t_rings_ce %>%
+  left_join(sulfur_yearly_means, by ="year") %>%
+  arrange(year) %>%
+  filter(year <= 705) %>%
+  mutate(n_tree_pct_change = (n_tree/lag(n_tree) - 1)*100,
+         euro_temp_pct_change = (europe_temp_index/lag(europe_temp_index) - 1)*100,
+         mean_neem_pct_change = (mean_neem/lag(mean_neem ) - 1)*100,
+         mean_wdc_pct_change = (mean_wdc/lag(mean_wdc) - 1)*100)
+
+percent_change %>%
+  select(year, n_tree_pct_change, euro_temp_pct_change, mean_neem_pct_change, mean_wdc_pct_change) %>%
+  pivot_longer(c("n_tree_pct_change", "euro_temp_pct_change", "mean_neem_pct_change", "mean_wdc_pct_change"),
+               names_to = "index",
+               values_to = "value") %>%
+  ggplot(aes(x = year,
+             y = value,
+             color = index)) +
+  geom_line()
+
 ```
 
 ### How likely will a volcano erupting in each VEI category after 1812?
