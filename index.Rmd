@@ -792,19 +792,15 @@ p2 <- sulfur %>%
 tree_rings_long <- t_rings_ce %>%
   pivot_longer(c("n_tree", "europe_temp_index"),
                names_to = "index",
-               values_to = "value") 
+               values_to = "value") %>%
+  mutate(year_ce = year + .990)
 
 t1 <- tree_rings_long %>%
-  filter(year <= 706) %>%
-  mutate(year_ce = year + .990) %>%
+  filter(year <= 706)  %>%
   ggplot(aes(x = year_ce,
              y = value,
              colour = index)) +
   geom_line()
-
-volcano_vei_4_north <- volcano_eruptions_hemisphere %>% 
-  filter(vei >= 4,
-         hemisphere == "Northern")
 
 ```
 
@@ -858,6 +854,20 @@ percent_change %>%
              y = value,
              color = index)) +
   geom_line()
+
+sulfur %>%
+  arrange(year) %>%
+  mutate(neem_pct_change = (neem/lag(neem ) - 1)*100,
+         wdc_pct_change = (wdc/lag(wdc) - 1)*100) %>%
+  ggplot(aes(x = year,
+             y = neem_pct_change)) +
+  geom_line()
+
+t_rings_ce %>%
+  arrange(year) %>%
+  filter(year <= 705) %>%
+  mutate(n_tree_pct_change = (n_tree/lag(n_tree) - 1)*100) %>%
+  
 
 ```
 
