@@ -57,13 +57,8 @@ rof <- read_csv("all.csv")
 
 # Introduction and motivation
 
-Volcanoes date back to hundreds and thousands of years ago where the first documented eruption occurred in [Santorini back in 1650 BC!](https://books.google.com.au/books?hl=en&lr=&id=pcucBAAAQBAJ&oi=fnd&pg=PP1&dq=volcanoes&ots=k2yBX9ZjWf&sig=bG4X4uLpUyqGG4DQH8BTgI7AK58&redir_esc=y#v=snippet&q=first%20eruption&f=false) Accompanied by its mysterious image in our eyes, volcanoes touch on a wide range of knowledge, including geochemistry, petrology, seismology and more. This topic seems to be complex and distant from people like us who did not take further studies on this area. Yet we chanced upon data set released by `TidyTuesday` which is probably one of if not the most comprehensive data set to learn more about volcanoes. This data exploration enable us to take a closer look at the more recent active volcanoes around. 
+Volcanoes date back billions of years ago with the first recorded eruption in 1650 BC in Santorini. They are spread out across the globe with many lying along the pacific coast lines along earths tectonic plates. Volcanoes are contributiors to more then 80% of the earths surface which they are able to do through their extreme explosive force and contents, which has led them to have mapped and shaped the the world as it is understood today (https://www.nationalgeographic.com/environment/natural-disasters/volcanoes/). With the force volcanoes are able to generate, they can bring about life however their destructive nature is also understood, and sometimes unfortunately underestimated (https://www.volcanodiscovery.com/volcanic_risk_zones.html#:~:text=For%20instance%2C%20High%20Risk%20Zones,where%20volcanic%20projectiles%20fall%20regularly.&text=With%20bigger%20eruptions%20producing%20heavy,such%20pyroclastic%20flows%20are%20channeled.) with many scientist over the course of history attributing significant changes to the globe and historic climate events to volcanoes, given the range of elements that they emit and as well as the ferocity and magnitude of eruptions (@smith). As such, the primary question of this report is _"What is the global impact of volcanic eruptions?" in order to better understand the risk volcanoes pose and the ramifications and reverberations to the human population from their eruptions. 
 
-Although volcanoes are nature's explosive land forms and yet one of the most beautiful, it is inevitable for us, as human being to neglect its impact on our lives. Based on our understanding on volcanoes, we develop two themes that will be surrounding this entire analysis, which are "severity" and "safety" so as to establish more interesting facts!
-
-We start with a brief introduction into the world of volcanoes, then visit the interaction between volcano & humans and finally looking into the characteristics of volcano.
-
- 
 # Data description
 The data source is from [The Smithsonian Institution](https://volcano.si.edu/), which has been constantly updating since 2013. The data is cleaned and made available for download on (https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-05-12/readme.md), so that we directly import the 5 data sets for this analysis. These 5 data sets are probably the most comprehensive data set around. They are volcano, eruptions, events, tree_rings and sulfur, allowing us to discover the influences among them. 
 
@@ -93,7 +88,9 @@ Data provided contains 5 linked data sets, each with looking at a particular asp
 
 - `sulfur`
   - Provide information on sulphur detected from 500.CE to 706.CE with 3 variables.
-  - Using the same unit for measurement, the data for "neem" is collected from Greenland while it is from Anatartica for "wdc".
+  - From two sources:
+    - Sulfur detected in ng/g from NEEM - ice cores from Greenland, data collected from melting ice cores, data range was 500 to 705 CE
+    - Sulfur detected in ng/g from WDC - ice cores from Antartica, data collected from melting ice cores, data range was 500 to 705 CE
 
 # Research questions
 - Primary:
@@ -873,14 +870,14 @@ augment(tree_lm_2) %>%
 
 The following section will be conducting analysis on volcano eruptions in order to assess how the elements of en eruption may impact the atmosphere and the resulting impact on climate. 
 
-As discussed, a volcanic eruption can vary in VEI magnitude and range in the substances that are released however, a constant element that is emitted during eruption is Sulfur, which is subsequently also one of the most effective elements in cooling the climate. When sulfur is released into the stratosphere it combines with water to form sulfuric acid aerosols that produce a coating of small droplets in the upper stratosphere which act as a reflector to incoming solar radiation and result in a global coolng of the earths surface, with the aerosols able to stay in the statrosphere for up to 3 year, eventually falling back to earth. Furthermore, as discussed tree ring scores can be used to act as a proxy in order to understand the weather at the time thus by assessing the linearage of sulfur events and tree ring scores the impact of volcanic eruptions on climate change can be assessed [https://scied.ucar.edu/shortcontent/how-volcanoes-influence-climate].
+As discussed, a volcanic eruption can vary in VEI magnitude and range in the substances that are released however, a constant element that is emitted during eruption is Sulfur, which is subsequently also one of the most effective elements in cooling the climate. When sulfur is released into the stratosphere it combines with water to form sulfuric acid aerosols that produce a coating of small droplets in the upper stratosphere which act as a reflector to incoming solar radiation and result in a global coolng of the earths surface, with the aerosols able to stay in the statrosphere for up to 3 year, eventually falling back to earth. Furthermore, as discussed tree ring scores can be used to act as a proxy in order to understand the weather at the time thus by assessing the linearage of sulfur events and tree ring scores the impact of volcanic eruptions on climate change can be assessed (@UCAR).
 
 The primary variables being used to assess the sulfur levels, in nannograms per gram, in the northern and southern hemisphere across the date range of 500-705 ce are:
 
   1. NEEM - ice cores from Greenland
   2. WDC - ice cores from Antartica
   
-Given the stable ice sheets as well as the earths rotation and locations of Greenland and Anatartica, the ice sheets abosrb and store the elements released during events in history and the NEEM and WDC team have been able to extract ice sheets that store records of atmospheric concentration of greenhouse gases, surface air temperature. Sulfur being one of these elements, thus the ice cores allow for a construction of a time series of the level of a sulfur at any given year thus allowing a reconstruction of when sulfuric events in the form of eruptions took place. [https://neem.dk/#:~:text=The%20North%20Greenland%20Eemian%20Ice,the%20previous%20interglacial%2C%20the%20Eemian.] [https://www.waisdivide.unh.edu/]
+Given the stable ice sheets as well as the earths rotation and locations of Greenland and Anatartica, the ice sheets abosrb and store the elements released during events in history and the NEEM and WDC team have been able to extract ice sheets that store records of atmospheric concentration of greenhouse gases, surface air temperature. Sulfur being one of these elements, thus the ice cores allow for a construction of a time series of the level of a sulfur at any given year thus allowing a reconstruction of when sulfuric events in the form of eruptions took place (@NEEM) (@WAIS).
 
 The histroic time frame provides critical information on the history of eruptions and sulfuric events thus allowing to better understand what caused certain events in history, such as ice ages and prolonged periods of cooling, and long term effects of sulfuric depositions impact the earth in order to better understand the likey outcome on climate from an eruption and how to plan accordingly. [https://www.researchgate.net/publication/279965759_Timing_and_climate_forcing_of_volcanic_eruptions_for_the_past_2500_years] 
 
@@ -1002,7 +999,7 @@ t2 <- percent_change %>%
   geom_vline(xintercept = c(683, 690, 653), colour = "red", alpha =.5) +
   geom_hline(yintercept = 0, colour = "black", alpha = .5) +
   scale_x_continuous(breaks = seq(500, 705, 25)) +
-  labs(title = "Percent change in euro temperature index",
+  labs(title = "Percent change in euro weather index",
        x = "Year",
        y = "Percentage %",
        tags = "(D)") +
@@ -1012,7 +1009,7 @@ t2 <- percent_change %>%
 ```
 
 
-```{r plot-ice-core, fig.cap = "Time series of the sulfur events that have been recorded in Greenland and Antartica and the European weather index and Tree Ring Z-Score", fig.width = 12}
+```{r plot-ice-core, out.height = "150%", fig.cap = "Time series of the sulfur events that have been recorded in Greenland and Antartica and the European weather index and Tree Ring Z-Score", fig.width = 12}
 p2 + p1 + t1 + t2 + plot_layout(nrow = 4)
 ```
 
@@ -1021,7 +1018,7 @@ Figure \@ref(fig:plot-ice-core) displays three plots with year on the x axis and
   - Plot (A) visualises the recorded sulfur levels, in ng/g, in the extracted Antartic ice sheet from year 500 to 705 CE
   - Plot (B) visualises the recorded sulfur levels, in ng/g, in the extracted Greenland ice sheets from year 500 to 705 CE
   - Plot (C) visualises the change in tree ring score size from year to year
-  - Plot (D) visualises the year on end percentage change in european temperature index
+  - Plot (D) visualises the year on end percentage change in european weather index
   - The red line indicating a volcanic eruption impacting the Southern hemisphere
   - The green vertical line indicating a volcanic eruption impacting the northern hemisphere
   - The blue vertical line indicating a bi-polar event impacting both hemispheres.
@@ -1031,14 +1028,14 @@ Looking at plot (A) and (B) the vertical lines indicate sulfuric events that the
   - Bipolar events: year 540, 575 and 682
   - Northern Hemisphere events: in year 520, 536, 550, 574 and 627
   - Southern Hemisphere events: in year 683, 690 and 653
-  - It is important to note that Northern Hemisphere volcanic eruptions materials tend to stay only in the Northern hemisphere while Southern hemipshere volcanic elements have been found to be move north [https://www.smithsonianmag.com/science-nature/sixth-century-misery-tied-not-one-two-volcanic-eruptions-180955858/]
+  - It is important to note that Northern Hemisphere volcanic eruptions materials tend to stay only in the Northern hemisphere while Southern hemipshere volcanic elements have been found to be move north (@smith).
   
-All these sulfur depositions have now been attributed to volcanic eruptions at the time [https://www.researchgate.net/publication/279965759_Timing_and_climate_forcing_of_volcanic_eruptions_for_the_past_2500_years] [https://www.smithsonianmag.com/science-nature/sixth-century-misery-tied-not-one-two-volcanic-eruptions-180955858/]. Asessing plot (C) and (D) from Figure \@ref(fig:plot-ice-core), it is evident that there is negative change and tree growth z scores and climate index that occur after the volcanic eruptions. Specifically:
+All these sulfur depositions have now been attributed to volcanic eruptions at the time (@article) (@smith). Asessing plot (C) and (D) from Figure \@ref(fig:plot-ice-core), it is evident that there is negative change and tree growth z scores and climate index that occur after the volcanic eruptions. Specifically:
 
  - Plot (C) shows an overall trend of drops in tree ring scores after a volcanis eruption and subsequent years of negative of negative tree ring scores.
     - Year 536 saw one of the most significant sulfur depostions from an eruoption in the northern hemisphere with a negative change of -4800% from 0.7 to 3.29. 
     - Interestingly, events in 574, 675, 627 and 690 are followed by growth in n tree ring size although still in the negative z score range.
-    - However, subsequent years after sulfur events show growth was again negative which indicates the lag and long term impact that sulfur depoistion events have on the stratosphere, as they may not always immediately show an impact however given the length of time the sufur can stay in the stratosphere it shows a long term effect taking place [https://www.researchgate.net/publication/279965759_Timing_and_climate_forcing_of_volcanic_eruptions_for_the_past_2500_years]. 
+    - However, subsequent years after sulfur events show growth was again negative which indicates the lag and long term impact that sulfur depoistion events have on the stratosphere, as they may not always immediately show an impact however given the length of time the sufur can stay in the stratosphere it shows a long term effect taking place (@article). 
     
   - Plot (D) displays the percentage change of the European temperature index, which displays a relatively  negative percentage year on end change in temperature after a volcanic event. 
     - Similarly to plot (C), there is a large negative percentage change of -1680% in the year 536 furthermore 
@@ -1551,7 +1548,7 @@ tect_avg
 
 It is evident from the analysis conducted that volcanic eruptions have a signifcant impact both to local populations and globally. From the analysis conducted it is evident that volcanoes can be unpredictable in VEI magnitude which leads to the notion that there is no blanket range that can followed to the letter that would be deemed safe or unsafe however, for the most part between 5km and 10km range would be considered safe in a mobile home setup. Despite the unpredictabiltiy on a case by case basis of each eruption it would be safest to not populate areas around volcanoes with the tectonic settings of Subduction zone / Continental crust ( >25km) Rift zone / Oceanic crust ( <15km) as these settings are ideal for eruptions and produce a larger number of eruptions, while it would be considered safest to populate areas along Intraplate / Intermediate crust (15-25km) as they tend to be associated with volcanoes that errupt the least frequently with lowest VEI. 
 
-Furthremore, by assessing the correlation relationship between tree rings and volcano eruptions, it clear that a strong correlation exits between tree ring z-score and temperature index. But, due to the limitations of `tree_ring` dataset, we cannot build a good model for temperature index. The model (`lm_2`) can only predict the temperature index well except for extreme values of temperature index. To build a better model, we need more accurate temperature index around volcanoes. Following on, Figure \@ref(fig:plot-ice-core) displays the percentage change in european weather index and tree ring size with the differing levels of sulfur recorded with a negative correlation exsiting between tree ring score sizes and both yearly mean MEEN and WDC sulfur levels inficating that after a volcanic eruption there is likely to be a subsequent period of cooling and climate change, showing the critical impact that volcano eruptions have both locally and globally.
+Furthremore, by assessing the correlation relationship between tree rings and volcano eruptions, it clear that a strong correlation exits between tree ring z-score and temperature index. But, due to the limitations of `tree_ring` dataset, we cannot build a good model for temperature index. The model (`lm_2`) can only predict the temperature index well except for extreme values of weather index. To build a better model, we need more accurate temperature index around volcanoes. Following on, Figure \@ref(fig:plot-ice-core) displays the percentage change in european weather index and tree ring size with the differing levels of sulfur recorded with a negative correlation exsiting between tree ring score sizes and both yearly mean MEEN and WDC sulfur levels inficating that after a volcanic eruption there is likely to be a subsequent period of cooling and climate change, showing the critical impact that volcano eruptions have both locally and globally.
 
 
 # Acknowledgements {-#mysection}

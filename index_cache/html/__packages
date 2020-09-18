@@ -24,10 +24,7 @@ sf
 data.table
 ggthemes
 maps
-ggridges
-<<<<<<< HEAD
 xml2
 rvest
-plotly
-=======
->>>>>>> sam
+patchwork
+ggridges
