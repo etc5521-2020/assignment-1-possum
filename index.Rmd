@@ -740,7 +740,23 @@ Above shows plot with fill depending on the number of eruptions in each country 
 
 Prominent countries(shaded orange) with the most active volcanoes lie on the Ring Of Fire.
 
+## Can volcano eruptions predict climate change?
 ## How sulfate levels and eruption cycles can be used to predict climate change?
+
+
+The following section will be conducting analysis on volcano eruptions in order to assess how the elements of en eruption may impact the atmosphere and the resulting impact on climate. 
+
+As discussed, a volcanic eruption can vary in VEI magnitude and range in the substances that are released however, a constant element that is emitted during eruption is Sulfur, which is subsequently also one of the most effective elements in cooling the climate. When sulfur is released into the stratosphere it combines with water to form sulfuric acid aerosols that produce a coating of small droplets in the upper stratosphere which act as a reflector to incoming solar radiation and result in a global coolng of the earths surface, with the aerosols able to stay in the statrosphere for up to 3 year, eventually falling back to earth. Furthermore, as discussed tree ring scores can be used to act as a proxy in order to understand the weather at the time thus by assessing the linearage of sulfur events and tree ring scores the impact of volcanic eruptions on climate change can be assessed [https://scied.ucar.edu/shortcontent/how-volcanoes-influence-climate].
+
+The primary variables being used to assess the sulfur levels, in nannograms per gram, in the northern and southern hemisphere across the date range of 500-705 ce are:
+
+  1. NEEM - ice cores from Greenland
+  2. WDC - ice cores from Antartica
+  
+Given the stable ice sheets as well as the earths rotation and locations of Greenland and Anatartica, the ice sheets abosrb and store the elements released during events in history and the NEEM and WDC team have been able to extract ice sheets that store records of atmospheric concentration of greenhouse gases, surface air temperature. Sulfur being one of these elements, thus the ice cores allow for a construction of a time series of the level of a sulfur at any given year thus allowing a reconstruction of when sulfuric events in the form of eruptions took place. [https://neem.dk/#:~:text=The%20North%20Greenland%20Eemian%20Ice,the%20previous%20interglacial%2C%20the%20Eemian.] [https://www.waisdivide.unh.edu/]
+
+The histroic time frame provides critical information on the history of eruptions and sulfuric events thus allowing to better understand what caused certain events in history, such as ice ages and prolonged periods of cooling, and long term effects of sulfuric depositions impact the earth in order to better understand the likey outcome on climate from an eruption and how to plan accordingly. [https://www.researchgate.net/publication/279965759_Timing_and_climate_forcing_of_volcanic_eruptions_for_the_past_2500_years] 
+
 
 ```{r}
 #fitlering tree ring for appropriate date range to compare with sulfate levels
@@ -768,11 +784,32 @@ volcano_eruptions_hemisphere <- volcano_eruptions_ce %>%
   select(volcano_name, eruption_category, start_year, country, hemisphere, vei, primary_volcano_type) %>%
   rename(year = start_year)
 
+volcano_eruptions_hemisphere_3 <- volcano_eruptions_hemisphere %>%
+  filter(vei >= 3)
+
 tree_rings_long <- t_rings_ce %>%
   pivot_longer(c("n_tree", "europe_temp_index"),
                names_to = "index",
                values_to = "value") %>%
   mutate(year_ce = year + .990)
+
+sulfur_yearly_means <- sulfur %>%
+  mutate(year_ce = str_sub(year, start = 0, end = 3)) %>%
+  select(-year) %>%
+  rename(year = year_ce) %>%
+  group_by(year) %>%
+  summarise(mean_neem = mean(neem),
+            mean_wdc = mean(wdc)) %>%
+  mutate(year = as.numeric(year))
+
+percent_change <- t_rings_ce %>%
+  left_join(sulfur_yearly_means, by ="year") %>%
+  arrange(year) %>%
+  filter(year <= 705) %>%
+  mutate(n_tree_pct_change = (n_tree/lag(n_tree) - 1)*100,
+         euro_temp_pct_change = (europe_temp_index/lag(europe_temp_index) - 1)*100,
+         mean_neem_pct_change = (mean_neem/lag(mean_neem ) - 1)*100,
+         mean_wdc_pct_change = (mean_wdc/lag(mean_wdc) - 1)*100)
 ```
 
 ```{r plot-variables}
@@ -782,68 +819,126 @@ p1 <- sulfur %>%
              y = neem)) +
   geom_line() +
   scale_y_continuous(breaks = seq(0, 200, 25)) +
-  geom_vline(xintercept = c(540, 575, 682), colour ="blue") +
-  geom_vline(xintercept = c(520, 536, 574, 627, 550), colour ="green") +
+  scale_x_continuous(breaks = seq(500, 705, 25)) +
+  geom_vline(xintercept = c(540, 575, 682), colour ="blue", alpha = .5) +
+  geom_vline(xintercept = c(520, 536, 574, 627, 550), colour ="green", alpha = .5) +
   labs(title = "Greenland NEEM Ice Core Sulfur Depositions",
-       x = "Sulfur ng/g ",
-       y = "Year") +
-  theme_linedraw()
+       y = "Sulfur ng/g ",
+       x = "Year",
+       tags = "(B)") +
+  theme_linedraw() +
+  theme(panel.grid.minor.y=element_blank(),
+           panel.grid.major.y=element_blank())
 
 p2 <- sulfur %>%
   ggplot(aes(x = year,
              y = wdc)) +
   geom_line() +
-  scale_y_continuous(breaks = seq(0, 200, 25)) +
-  geom_vline(xintercept = c(540, 575, 682), colour ="blue") +
-  geom_vline(xintercept = c(683, 690, 653, 550), colour = "red") +
+  scale_y_continuous(breaks = seq(0, 200, 50)) +
+  scale_x_continuous(breaks = seq(500, 705, 25)) +
+  geom_vline(xintercept = c(540, 575, 682), colour ="blue", alpha =.5) +
+  geom_vline(xintercept = c(683, 690, 653, 550), colour = "red", alpha = .5) +
   labs(title = "Antaric WDC Ice Core Sulfur Depositions",
        x = "Year",
-       y = "Sulfur ng/g") +
-  theme_linedraw()
+       y = "Sulfur ng/g",
+       tags = "(A)") +
+  theme_linedraw() +
+  theme(panel.grid.minor.y=element_blank(),
+           panel.grid.major.y=element_blank())
   
 
-t1 <- tree_rings_long %>%
-  filter(year <= 706)  %>%
-  ggplot(aes(x = year_ce,
-             y = value,
-             colour = index)) +
+t1 <- percent_change %>%
+  ggplot(aes(x = year,
+             y = n_tree)) +
   geom_line() +
   scale_color_viridis_d() +
-  geom_vline(xintercept = c(540, 575, 682), colour ="blue") +
-  geom_vline(xintercept = c(520, 536, 574, 627, 550), colour ="green") +
-  geom_vline(xintercept = c(683, 690, 653), colour = "red") +
-  labs(title = "European Weather Index and Tree Ring Z-scores",
-       x = "year",
-       y = "Temp index/Z-score") +
-  theme_linedraw()
+  geom_vline(xintercept = c(540, 575, 682), colour ="blue", alpha = .5) +
+  geom_vline(xintercept = c(520, 536, 574, 627, 550), colour ="green", alpha = .5) +
+  geom_vline(xintercept = c(683, 690, 653), colour = "red", alpha =.5) +
+  geom_hline(yintercept = 0, colour = "blue", alpha = .5) +
+  scale_x_continuous(breaks = seq(500, 705, 25)) +
+  labs(title = "Change in Tree Ring Z-scores",
+       x = "Year",
+       y = "T ring scores",
+       tags = "(C)") +
+  theme_linedraw() +
+  theme(panel.grid.minor.y=element_blank(),
+           panel.grid.major.y=element_blank())
+
+t2 <- percent_change %>%
+  ggplot(aes(x = year,
+             y = euro_temp_pct_change)) +
+  geom_line() +
+  scale_color_viridis_d() +
+  geom_vline(xintercept = c(540, 575, 682), colour ="blue", alpha = .5) +
+  geom_vline(xintercept = c(520, 536, 574, 627, 550), colour ="green", alpha = .5) +
+  geom_vline(xintercept = c(683, 690, 653), colour = "red", alpha =.5) +
+  geom_hline(yintercept = 0, colour = "black", alpha = .5) +
+  scale_x_continuous(breaks = seq(500, 705, 25)) +
+  labs(title = "Percent change in euro temperature index",
+       x = "Year",
+       y = "Percentage %",
+       tags = "(D)") +
+  theme_linedraw() +
+  theme(panel.grid.minor.y=element_blank(),
+           panel.grid.major.y=element_blank())
 ```
 
 
-
-```{r plot, fig.cap = "Time series of the sulfur events that have been recorded in Greenland and Antartica and the European weather index and Tree Ring Z-Score", fig.width = 12}
-p2 + p1 + t1 + plot_layout(nrow = 3)
+```{r plot-ice-core, fig.cap = "Time series of the sulfur events that have been recorded in Greenland and Antartica and the European weather index and Tree Ring Z-Score", fig.width = 12}
+p2 + p1 + t1 + t2 + plot_layout(nrow = 4)
 ```
 
-```{r violin-plot, fig.cap = "Figure displaying the distribution of eruptions with a VEI rating of 4 or greater"}
-volcano_vei_ce <- volcano_eruptions_hemisphere_4 %>% 
-  filter(year <= 705) %>%
-  ggplot(aes(x = as.factor(vei),
-             y = year,
-             color = as.factor(vei))) +
-  geom_violin() +
-  facet_wrap(~hemisphere) +
-  geom_point() +
-  labs(title = "Distribution of VEI-4+ eruptions",
-       x = "VEI Rating",
-       y = "Year",
-       color = "VEI") +
-  scale_y_continuous(breaks = seq(500, 7010, 10)) +
-  theme_linedraw()
-volcano_vei_ce
+Figure \@ref(fig:plot-ice-core) displays three plots with year on the x axis and, for (A) and (B), historically recorded sulfur levels on the y axis while for (C) and (D), percentage change:
+
+  - Plot (A) visualises the recorded sulfur levels, in ng/g, in the extracted Antartic ice sheet from year 500 to 705 CE
+  - Plot (B) visualises the recorded sulfur levels, in ng/g, in the extracted Greenland ice sheets from year 500 to 705 CE
+  - Plot (C) visualises the change in tree ring score size from year to year
+  - Plot (D) visualises the year on end percentage change in european temperature index
+  - The red line indicating a volcanic eruption impacting the Southern hemisphere
+  - The green vertical line indicating a volcanic eruption impacting the northern hemisphere
+  - The blue vertical line indicating a bi-polar event impacting both hemispheres.
+  
+Looking at plot (A) and (B) the vertical lines indicate sulfuric events that the ice cores recorded and have been attributed to volcanic eruptions. Specifcally: 
+
+  - Bipolar events: year 540, 575 and 682
+  - Northern Hemisphere events: in year 520, 536, 550, 574 and 627
+  - Southern Hemisphere events: in year 683, 690 and 653
+  - It is important to note that Northern Hemisphere volcanic eruptions materials tend to stay only in the Northern hemisphere while Southern hemipshere volcanic elements have been found to be move north [https://www.smithsonianmag.com/science-nature/sixth-century-misery-tied-not-one-two-volcanic-eruptions-180955858/]
+  
+All these sulfur depositions have now been attributed to volcanic eruptions at the time [https://www.researchgate.net/publication/279965759_Timing_and_climate_forcing_of_volcanic_eruptions_for_the_past_2500_years] [https://www.smithsonianmag.com/science-nature/sixth-century-misery-tied-not-one-two-volcanic-eruptions-180955858/]. Asessing plot (C) and (D) from Figure \@ref(fig:plot-ice-core), it is evident that there is negative change and tree growth z scores and climate index that occur after the volcanic eruptions. Specifically:
+
+ - Plot (C) shows an overall trend of drops in tree ring scores after a volcanis eruption and subsequent years of negative of negative tree ring scores.
+    - Year 536 saw one of the most significant sulfur depostions from an eruoption in the northern hemisphere with a negative change of -4800% from 0.7 to 3.29. 
+    - Interestingly, events in 574, 675, 627 and 690 are followed by growth in n tree ring size although still in the negative z score range.
+    - However, subsequent years after sulfur events show growth was again negative which indicates the lag and long term impact that sulfur depoistion events have on the stratosphere, as they may not always immediately show an impact however given the length of time the sufur can stay in the stratosphere it shows a long term effect taking place [https://www.researchgate.net/publication/279965759_Timing_and_climate_forcing_of_volcanic_eruptions_for_the_past_2500_years]. 
+    
+  - Plot (D) displays the percentage change of the European temperature index, which displays a relatively  negative percentage year on end change in temperature after a volcanic event. 
+    - Similarly to plot (C), there is a large negative percentage change of -1680% in the year 536 furthermore 
+    - As the trend in plot (C) show, although in some cases the immediate impact of the volcnic event there is a lagged effect of an overall negative change from year to year in the weather index in the subsequent years after an event.   
+  
+### Correlation test
+
+To supplement the analysis conducted on Figure \@ref(fig:plot-ice-core), a pearson correlation test was conducted on the tree scores and the yearly average NEEM and WDC sulfur level recordings.
+
+```{r cor-neem-tree, fig.cap = "Correlation test between the tree ring scores and the yearly mean neem sulfur levels recorded"}
+cor.test(x = percent_change$n_tree, y = percent_change$mean_neem, method = "pearson") %>%
+  tidy() %>%
+  kable(caption = "Tree ring score and yearly mean NEEM correlation test") %>%
+  kable_styling(bootstrap_options = c("hover", "striped")) 
+```
+```{r cor-wdc-tree, fig.cap = "Correlation test between the tree ring scores and the yearly mean wdc sulfur levels recorded"}
+cor.test(x = percent_change$n_tree, y = percent_change$mean_wdc, method = "pearson") %>%
+  tidy() %>%
+  kable(caption = "Tree ring score and yearly mean WDC correlation test") %>%
+  kable_styling(bootstrap_options = c("hover", "striped")) 
 ```
 
-
-
+The results from Table \@ref(tab:cor-neem-tree) and Table \@ref(tab:cor-wdc-tree) present a negative correlation between the tree ring sizes and the sulfur levels recorded by MEEN and WDC, with:
+  - The correlation between tree rings and MEEN mean sulfur levels: -0.36.
+  - The correlation between tree rings and WDC mean sulfur levels: -0.29.
+  
+Thus indicating that with increased sulfur levels tree ring size decreases and given tree rings act as a proxy for weather this leads to the notion that with event of a volcanic eruption taking and the subsequent release of the sulfur gases into the stratosphere there is likely to be both short term and long term climate impact with a global cooling period taking place.
 
 
 ### How likely will a volcano erupting in each VEI category after 1812?
