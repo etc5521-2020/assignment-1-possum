@@ -308,9 +308,6 @@ Figure \@ref(fig:world-map) displays two maps, one showing the Active Volcanoes 
 
 We found that most of the volcanoes lie along the Pacific Ocean tracing the boundaries of tectonic plates, this is known as the 'Ring of Fire' [@ngs]. This path is approximately 40,000km long and holds 75% of the World's Volcanoes with 90% of them being active. The abundance of volcanoes are explained by significant tectonic plates in the area, as volcanoes are formed through the cracking in the ground created by converging or diverging tectonic plate boundaries. 
 
-In order to map the tectonic boundaries the tectonic plates were split at the prime meridian (x-intercept where long = 0) with the assistiance of Z.Lin at [StackOverflow](https://stackoverflow.com/questions/63591697/how-to-split-tectonic-plate-boundary-polygon-in-a-way-to-prevent-line-across-the/63593236?noredirect=1#comment112479435_63593236). The datasets were joined with the world map datasets provided by `ggplot` to find the continent and country coordinates as well as dataset from [Kaggle](https://www.kaggle.com/cwthompson/tectonic-plate-boundaries) to obtain coordinates to plot the tectonic plates polygon.
-
-
 
 ```{r ring-of-fire, fig.cap = "The Ring of Fire", fig.height=8, fig.width=14}
 # ---- fix longitude; recenter coordinates to center around ring of fire
@@ -1401,6 +1398,8 @@ augment(tree_lm_2) %>%
 # Acknowledgements
 
 Data source is from @smithsonian.
+
+In order to map the tectonic boundaries the tectonic plates were split at the prime meridian (x-intercept where long = 0) with the assistiance of Z.Lin at [StackOverflow](https://stackoverflow.com/questions/63591697/how-to-split-tectonic-plate-boundary-polygon-in-a-way-to-prevent-line-across-the/63593236?noredirect=1#comment112479435_63593236). The datasets were joined with the world map datasets provided by `ggplot` to find the continent and country coordinates as well as dataset from [Kaggle](https://www.kaggle.com/cwthompson/tectonic-plate-boundaries) to obtain coordinates to plot the tectonic plates polygon.
 
 These packages are used to produce this report:
 
