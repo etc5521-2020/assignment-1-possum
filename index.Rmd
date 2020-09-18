@@ -97,12 +97,16 @@ Data provided contains 5 linked data sets, each with looking at a particular asp
 
 # Research questions
 - Primary:
-  Does volcanoes with different VEI have specific characteristics?
+  What is the global impact of volcanic eruptions?
 
 - Secondary:
-  How worried should you be about a volcano eruption?
+
+  What is range of risk with volano eruptions?
+  Do volcanoes with different VEI have specific characteristics?
+  *What is relationship between tree rings and volcanis eruptions?*
+  *Can volcano eruptions predict climate change?*
   Which tectonic settings have higher or lower VEI and how this relates to the duration of eruption?
-  What is the ideal setting for a volcano to form?
+  What are the ideal settings for eruptions to take place?
   
 # Analysis and findings
 
@@ -184,7 +188,7 @@ volcano_erupted %>%
   
 ```
 
-There are 3 main types of Active(erupted before) Volcanoes namely Stratovolcano, Caldera and Shield. We decided to label the others as `others`. Stratovolcanoes are by far the most active volcano. 
+There are 3 main types of Active Volcanoes namely Stratovolcano, Caldera and Shield. The rest have been labelled as `others`. Stratovolcanoes are by far the most active volcano. 
 
 ```{r plates, include = FALSE}
 plate <- unique(rof$plate) %>% 
@@ -360,11 +364,11 @@ ggplot() +
         plot.subtitle = element_text(size = 16, colour = "orange"))
 ```
 
-This map zoomed into the Ring Of Fire, showing the volcanoes running along the boundaries. Relatively speaking, the volcanoes here have more eruptions.
+Figure \@ref(fig:ring-of-fire) displays the Ring Of Fire, which demonstrates the number of volcanoes running along the boundaries. Relatively speaking, the volcanoes here have more eruptions.
 
-## The interaction between volcanoes and humans - How worried should you be about volcanoes?
+## The interaction between volcanoes and humans - what is the range of risk with volcano eruptions?
 
-### Population around volcanoes' vicinity
+### Population living around active volcanoes
 
 ```{r plotpop-exploration, include = FALSE}
 volcano_erupted %>% 
@@ -660,37 +664,6 @@ Size of a volcano can be an indicator of the potential damage that could come fr
 Figure \@ref(fig:triangles-fun) was inspired by [Sil Aarts'](https://twitter.com/sil_aarts/status/1260156344319041537/photo/1) visualization where we use `geom_polygon` to create easy and intuitive visualizations.
 
 ### World map with number of eruptions in each country
-#####REMOVED volcano-erupted-countries Plot
-```{r volcano-erupted-countries, fig.height=8, fig.width=14, eval = FALSE}
-volcano_erupted %>% 
-  arrange(-n) %>% 
-  head(10) %>% 
-  ggplot() +
-  geom_col(aes(x = reorder(volcano, -n),
-               y  = n),
-           width = 0.1,
-           space = 0.1,
-           fill = "orange") +
-  labs(x = "Volcano",
-       y = "Number of eruptions") +
-  ggtitle("Top 10 Most Active Volcanoes") +
-  theme_minimal() +
-  theme(axis.text = element_text(colour = "white",
-                                 size = 12),
-        axis.text.x = element_text(angle = 45),
-        axis.title = element_text(colour = "white",
-                                  size = 18)) +
-  theme(panel.background = element_rect(fill = "grey20"),
-        plot.background = element_rect(fill = "grey20")) +
-  theme(legend.position = "right",
-        legend.background = element_rect(fill = "grey20"),
-        legend.text = element_text(colour = "white"),
-        legend.title = element_text(colour = "white")) + 
-  theme(plot.title = element_text(size = 20, face = "bold", colour = "orange"),
-        plot.subtitle = element_text(size = 16, colour = "orange")) 
-  
-  
-```
 
 
 ```{r volcano-countries, fig.cap = "World Map with countries experiencing most eruptions", fig.height=8, fig.width=14}
@@ -761,7 +734,7 @@ volcano_country_join %>%
              aes(x = longitude, y = latitude,
                  size = population_within_5_km),
                  colour = "blue",
-             alpha = .1) +
+             alpha = .5) +
   scale_size(range = c(2,7),
             name = "Population Within 5km",
             breaks = c(100, 1000, 10000, 100000, 1000000, 40640105),
@@ -807,9 +780,96 @@ Figure \@ref(fig:volcano-countries) displays the locations of volcanoes with a p
   - Most of the countries with higher counts of eruptions lie along the edges of the pacifc ocean, which is known as the "Ring of Fire"
   - The countries along the "Ring of Fire", specifically Noth America, Chile, Indonesia and Japan have the highest number of populations near the more active volcano sites. Inicating that, living in those countries along the pacific ocean poses a potential higher risk to those individuals relative to those living more inland.[https://www.usgs.gov/faqs/what-ring-fire?qt-news_science_products=0#]
 
-## Can volcano eruptions predict climate change?
-## How sulfate levels and eruption cycles can be used to predict climate change?
+## Is there any relationship between tree rings and volcanic eruption events? (Conducted by Yuheng Cui)
 
+Tree ring is an important indicator to reveal climate and temperature change. `tree_rings` dataset contains the values of two variables (`n_tree` and `europe_temp_index`) from year 0 to year 2000. `n_tree` is tree ring z-scores relative to year and z-score is a measure of variability from the mean). `europe_temp_index` is the average yearly temperature for Europe in Celsius relative to 1961 to 1990. We know that tree ring width reflects the growth conditions of the tree --- the condition refers to nutrient conditions, precipitation and temperature during a growing season. @seiler2017tree suggest "the ring width may also be influenced by volcanic activity on Mount Etna and in other volcanic regions.” @seiler2017tree also suggest the pre-eruptive phase can only have begun when the trees had already ceased their seasonal growth.
+
+### Limitation of `tree_ring` dataset
+
+`tree_ring` dataset does not have the accurate tree ring z-score value near the volcanoes, and the temperature index is related to only Europe but not near the active volcanoes. The second limitation is because wildfires also affect the tree ring z-score, but we don't have the wildfires records of Europe. 
+
+Due to `tree_ring` dataset only containing the temperature index and tree ring data in Europe, we filter the eruption events that occur in Europe only. However, most eruption events were in Russia, and partial Russian territory is belong to Europe. In other words, not all eruptions affect Europe temperature index. But it is still worthy to analyse the relationship between tree rings and volcanic eruption events by using the `tree_ring` dataset.
+
+
+### Analysis
+
+First, we draw a plot for `n_tree` and `europe_temp_index`. Fig \@ref(fig:tree-ring) shows these the changes of two variables along time. The vertical dash lines indicate the eruption events. It seems that two lines generally fit each other. To ensure the correlation between these two variables, we run a correlation test. Table \@ref(tab:cortest) shows the estimated correlation is 0.79 and p-value is less than 0.05. This is to say that we are 95% confident that two variables are strongly correlated. Thus, we can build a model for these two variables.
+
+
+```{r eruptions-in-euro}
+euro_list <- read_html("https://en.wikipedia.org/wiki/List_of_European_countries_by_area") %>% 
+  html_table(fill = TRUE)
+
+euro_list <- euro_list[[1]] %>% 
+  select(State) %>% 
+  mutate(State = stringr::str_remove(State, "\\*"))
+
+euro_list_clean <- euro_list %>% 
+  left_join(volcano_erupted, by = c("State" = "country")) %>% 
+  select(State, start_year, end_year) %>% 
+  filter(start_year %in% c(1:2000))
+
+```
+
+```{r tree-ring, out.width = '150%', fig.cap = "Tree ring z-score and temperature index"}
+tree_ring_clean <- tree_rings %>% 
+  filter(!is.na(year))
+
+tree_ring_clean %>% 
+  pivot_longer(cols = c("n_tree", "europe_temp_index"), names_to = "type", values_to = "value") %>% 
+  ggplot(aes(x = year, y = value, color = type)) +
+  geom_line(alpha = 0.5)+
+  geom_vline(xintercept = euro_list_clean[,2], linetype = "dashed") +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom")
+
+
+```
+
+```{r cortest}
+cor.test(tree_ring_clean$n_tree, tree_ring_clean$europe_temp_index) %>% tidy() %>% kable(caption = "Correlation test for tree ring z-score and temperature index") %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+We build two linear models: 
+$$\large{lm\_1} :\large{\widehat{\text{Europe temp index}}} = 0.1073 + 0.4941 * \text{Tree ring z-score}$$
+
+$$\large{lm\_2} :\large{\widehat{\text{Europe temp index}}} = 0.10765 + 0.49421 * \text{Tree ring z-score} - 0.02598 * \text{Eruption}$$
+In `lm_2`, for `eruption`, 1 means there was an eruption while 0 means none.
+
+Table \@ref(tab:lmtreering) shows the goodness of two models. `lm_2` is slightly better than `lm_1` because its $r^2$ is slightly greater than `lm_1`'s $r^2$. In conclusion, both of them are not good because of low `r_square`. For example, `lm_1` has $r^2$ of 0.6287, which means only 62.87% of variation explained by the model. The reason might be an eruption has its radius of influence, and most of the eruptions were in Russia, thus, they did not have big influence in Europe temperature index. In addition, even there was a big eruption, it can hardly affect the whole Europe or the yearly average temperature index.  
+
+To visulising the fittness of `lm_2`, we plot the residual value based on `lm_2`. Residual value refers to the difference between observed and predicted value. If a model is a good model, the residual value would close to y intercept. Fig \@ref(fig:lm_2_resid) shows the residual value spread, and variation of residual value is increasing while the temperature index is more far away from 0. This means, in some degree, `lm_2` can predict the `europe_temp_index` under non-extreme value of `n_tree`.
+
+```{r lmtreering}
+# insert the eruption variable into the tree ring dataset
+tree_ring_clean <- tree_ring_clean %>% 
+  # eruption = 1 means there was an eruption, eruption = 0 means none eruption.
+  mutate(eruption = case_when(
+    year %in% euro_list_clean[,2] ~ 1,
+    TRUE ~ 0
+  ),
+  eruption = as.factor(eruption))
+
+tree_lm_1 <- lm(europe_temp_index ~ n_tree, data = tree_ring_clean)
+tree_lm_2 <- lm(europe_temp_index ~ n_tree +eruption, data = tree_ring_clean)
+
+tibble(model = c("lm_1 (no eruption)", "lm_2 (eruption)"), r_square = c(glance(tree_lm_1)[[2]],
+glance(tree_lm_2)[[2]])) %>% kable(caption = "Compare two models") %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "center")
+```
+
+
+```{r lm_2_resid, fig.cap = "Residual lm_2"}  
+augment(tree_lm_2) %>% 
+  ggplot(aes(x = europe_temp_index, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, color = 'red') +
+  geom_smooth(method = "glm")
+```
+
+
+## Can volcano eruptions predict climate change? (Conducted by Sam Lyubic)
 
 The following section will be conducting analysis on volcano eruptions in order to assess how the elements of en eruption may impact the atmosphere and the resulting impact on climate. 
 
@@ -1007,7 +1067,7 @@ The results from Table \@ref(tab:cor-neem-tree) and Table \@ref(tab:cor-wdc-tree
   
 Thus indicating that with increased sulfur levels tree ring size decreases and given tree rings act as a proxy for weather this leads to the notion that with event of a volcanic eruption taking and the subsequent release of the sulfur gases into the stratosphere there is likely to be both short term and long term climate impact with a global cooling period taking place.
 
-### How prominent are high VEI scale eruptions?
+## Which tectonic settings have higher or lower VEI and how this relates to the duration of eruption?
 
 VEI measures the explosiveness of volcanic eruptions which is determined by the volume of contents launched from the eruption. The contents is made up of pyroclastic flow, ash clouds, debrit and rocks with the eruption cloud height and volume being assessed as part of the measure. VEI is qualitatlively described using terms such ranging from "gentle" to "mega-colossal". [[Wikipedia](https://en.wikipedia.org/wiki/Volcanic_Explosivity_Index)]. 
 
@@ -1278,18 +1338,6 @@ a5num1 <- list2DF(a1) %>%
 
 
 ### How is VEI level related to eruption duration? 
-!!!removed table!!
-```{r jta1, eavl = FALSE}
-a5num1k <- kable(a5num1, caption = "Five number summary and mean of duration for each VEI") %>%
-  kable_styling(bootstrap_options = c("striped", "hover"))
-a5num1k
-
-```
-
-
-
-
-
 
 ```{r jfa1, warning=TRUE, echo=FALSE, fig.cap = "Five number summary distribtuion for VEI level from 0 to 6", fig.height=8, fig.width=14}
 abox <- ggplot(vei_du, aes(x = as.factor(vei), y = duration, color = "#FED8B1")) +
@@ -1340,7 +1388,7 @@ Table \@ref(tab:glm) displays the results for the goodness of fit analysis condu
   - r-square and adjusted r-squared are low with 1.63% and 1.57%. 
     - This implies that only 1.63% of the variation in duration can be explained by a VEI level, if a regression model is fitted, thus concluding the insignificant role of VEI in determining duration.
 
-### Which tectonic settings have longer or shorter eruption duration?
+## What are the ideal settings for eruptions to take place?
 
 The following section will be analysis the duration of eruptions for the range of tectonic settings.
 ```{r duration, include=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
@@ -1361,9 +1409,6 @@ ajoin3 <- a3 %>%
     count(tectonic_settings) %>%
     mutate(Percentage = n/sum(n)*100)
 ```
-
-
-
 
 
 ```{r jfa2, include=FALSE, echo=FALSE}  
@@ -1502,100 +1547,14 @@ tect_avg <- kable(hl_tect, caption = "Average VEI level for each tectonic settin
 tect_avg
 ```
 
-# Assignment 2 Extra questions
+# Conclusion 
 
-## Is there any relationship between tree rings and volcanic eruption events? (Edited by Yuheng Cui)
+It is evident from the analysis conducted that volcanic eruptions have a signifcant impact both to local populations and globally. From the analysis conducted it is evident that volcanoes can be unpredictable in VEI magnitude which leads to the notion that there is no blanket range that can followed to the letter that would be deemed safe or unsafe however, for the most part between 5km and 10km range would be considered safe in a mobile home setup. Despite the unpredictabiltiy on a case by case basis of each eruption it would be safest to not populate areas around volcanoes with the tectonic settings of Subduction zone / Continental crust ( >25km) Rift zone / Oceanic crust ( <15km) as these settings are ideal for eruptions and produce a larger number of eruptions, while it would be considered safest to populate areas along Intraplate / Intermediate crust (15-25km) as they tend to be associated with volcanoes that errupt the least frequently with lowest VEI. 
 
-Tree ring is an important indicator to reveal climate and temperature change. `tree_rings` dataset contains the values of two variables (`n_tree` and `europe_temp_index`) from year 0 to year 2000. `n_tree` is tree ring z-scores relative to year and z-score is a measure of variability from the mean). `europe_temp_index` is the average yearly temperature for Europe in Celsius relative to 1961 to 1990. We know that tree ring width reflects the growth conditions of the tree --- the condition refers to nutrient conditions, precipitation and temperature during a growing season. @seiler2017tree suggest "the ring width may also be influenced by volcanic activity on Mount Etna and in other volcanic regions.” @seiler2017tree also suggest the pre-eruptive phase can only have begun when the trees had already ceased their seasonal growth.
-
-### Limitation of `tree_ring` dataset
-
-`tree_ring` dataset does not have the accurate tree ring z-score value near the volcanoes, and the temperature index is related to only Europe but not near the active volcanoes. The second limitation is because wildfires also affect the tree ring z-score, but we don't have the wildfires records of Europe. 
-
-Due to `tree_ring` dataset only containing the temperature index and tree ring data in Europe, we filter the eruption events that occur in Europe only. However, most eruption events were in Russia, and partial Russian territory is belong to Europe. In other words, not all eruptions affect Europe temperature index. But it is still worthy to analyse the relationship between tree rings and volcanic eruption events by using the `tree_ring` dataset.
+Furthremore, by assessing the correlation relationship between tree rings and volcano eruptions, it clear that a strong correlation exits between tree ring z-score and temperature index. But, due to the limitations of `tree_ring` dataset, we cannot build a good model for temperature index. The model (`lm_2`) can only predict the temperature index well except for extreme values of temperature index. To build a better model, we need more accurate temperature index around volcanoes. Following on, Figure \@ref(fig:plot-ice-core) displays the percentage change in european weather index and tree ring size with the differing levels of sulfur recorded with a negative correlation exsiting between tree ring score sizes and both yearly mean MEEN and WDC sulfur levels inficating that after a volcanic eruption there is likely to be a subsequent period of cooling and climate change, showing the critical impact that volcano eruptions have both locally and globally.
 
 
-### Analysis
-
-First, we draw a plot for `n_tree` and `europe_temp_index`. Fig \@ref(fig:tree-ring) shows these the changes of two variables along time. The vertical dash lines indicate the eruption events. It seems that two lines generally fit each other. To ensure the correlation between these two variables, we run a correlation test. Table \@ref(tab:cortest) shows the estimated correlation is 0.79 and p-value is less than 0.05. This is to say that we are 95% confident that two variables are strongly correlated. Thus, we can build a model for these two variables.
-
-
-```{r eruptions-in-euro}
-euro_list <- read_html("https://en.wikipedia.org/wiki/List_of_European_countries_by_area") %>% 
-  html_table(fill = TRUE)
-
-euro_list <- euro_list[[1]] %>% 
-  select(State) %>% 
-  mutate(State = stringr::str_remove(State, "\\*"))
-
-euro_list_clean <- euro_list %>% 
-  left_join(volcano_erupted, by = c("State" = "country")) %>% 
-  select(State, start_year, end_year) %>% 
-  filter(start_year %in% c(1:2000))
-
-```
-
-```{r tree-ring, out.width = '150%', fig.cap = "Tree ring z-score and temperature index"}
-tree_ring_clean <- tree_rings %>% 
-  filter(!is.na(year))
-
-tree_ring_clean %>% 
-  pivot_longer(cols = c("n_tree", "europe_temp_index"), names_to = "type", values_to = "value") %>% 
-  ggplot(aes(x = year, y = value, color = type)) +
-  geom_line(alpha = 0.5)+
-  geom_vline(xintercept = euro_list_clean[,2], linetype = "dashed") +
-  theme(legend.title = element_blank(),
-        legend.position = "bottom")
-
-
-```
-
-```{r cortest}
-cor.test(tree_ring_clean$n_tree, tree_ring_clean$europe_temp_index) %>% tidy() %>% kable(caption = "Correlation test for tree ring z-score and temperature index") %>% 
-  kable_styling(bootstrap_options = c("striped", "hover"))
-```
-
-We build two linear models: 
-$$\large{lm\_1} :\large{\widehat{\text{Europe temp index}}} = 0.1073 + 0.4941 * \text{Tree ring z-score}$$
-
-$$\large{lm\_2} :\large{\widehat{\text{Europe temp index}}} = 0.10765 + 0.49421 * \text{Tree ring z-score} - 0.02598 * \text{Eruption}$$
-In `lm_2`, for `eruption`, 1 means there was an eruption while 0 means none.
-
-Table \@ref(tab:lmtreering) shows the goodness of two models. `lm_2` is slightly better than `lm_1` because its $r^2$ is slightly greater than `lm_1`'s $r^2$. In conclusion, both of them are not good because of low `r_square`. For example, `lm_1` has $r^2$ of 0.6287, which means only 62.87% of variation explained by the model. The reason might be an eruption has its radius of influence, and most of the eruptions were in Russia, thus, they did not have big influence in Europe temperature index. In addition, even there was a big eruption, it can hardly affect the whole Europe or the yearly average temperature index.  
-
-To visulising the fittness of `lm_2`, we plot the residual value based on `lm_2`. Residual value refers to the difference between observed and predicted value. If a model is a good model, the residual value would close to y intercept. Fig \@ref(fig:lm_2_resid) shows the residual value spread, and variation of residual value is increasing while the temperature index is more far away from 0. This means, in some degree, `lm_2` can predict the `europe_temp_index` under non-extreme value of `n_tree`.
-
-```{r lmtreering}
-# insert the eruption variable into the tree ring dataset
-tree_ring_clean <- tree_ring_clean %>% 
-  # eruption = 1 means there was an eruption, eruption = 0 means none eruption.
-  mutate(eruption = case_when(
-    year %in% euro_list_clean[,2] ~ 1,
-    TRUE ~ 0
-  ),
-  eruption = as.factor(eruption))
-
-tree_lm_1 <- lm(europe_temp_index ~ n_tree, data = tree_ring_clean)
-tree_lm_2 <- lm(europe_temp_index ~ n_tree +eruption, data = tree_ring_clean)
-
-tibble(model = c("lm_1 (no eruption)", "lm_2 (eruption)"), r_square = c(glance(tree_lm_1)[[2]],
-glance(tree_lm_2)[[2]])) %>% kable(caption = "Compare two models") %>% 
-  kable_styling(bootstrap_options = "striped", full_width = F, position = "center")
-```
-
-
-
-
-```{r lm_2_resid, fig.cap = "Residual lm_2"}  
-augment(tree_lm_2) %>% 
-  ggplot(aes(x = europe_temp_index, y = .resid)) +
-  geom_point() +
-  geom_hline(yintercept = 0, color = 'red') +
-  geom_smooth(method = "glm")
-```
-
-
-# Acknowledgements
+# Acknowledgements {-#mysection}
 
 Data source is from @smithsonian.
 
