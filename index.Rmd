@@ -9,7 +9,8 @@ date: "`r Sys.Date()`"
 bibliography: references.bib
 biblio-style: authoryear-comp
 output: 
-  bookdown::html_document2
+  bookdown::html_document2:
+    theme: cosmo
 ---
 
 [This assignment is for ETC5521 Assignment 1 by Team `r rmarkdown::metadata$team` comprising of `r knitr::combine_words(rmarkdown::metadata$author)`.]{style="color:#006DAE;"}
