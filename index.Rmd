@@ -87,7 +87,7 @@ Data provided contains 5 linked data sets, each with looking at a particular asp
   - Despite variables such as "event_type" and "event_remark" , a lot of its variables (e.g. eruption dates) overlap with that of `eruptions`, thus it seems as a condensed version of `eruptions`.
   - "NA" are presented regularly for "event_remarks" and mostly event dates information.
 
-- `tree_ring`: Tree rings were used as a climate proxy. In study of effects on volcanoes on climate change, researchers matched effects of eruptions to tree ring records. The measurements are conducted yearly and no data is missing.
+- `tree_ring`: Tree rings were used as a climate proxy. In study of effects on volcanoes on climate change, researchers matched effects of eruptions to tree ring records. The measurements are conducted yearly and no data is missing. Threre will be more discussion about `tree_ring` later.  
 
 - `sulfur`
   - Provide information on sulphur detected from 500.CE to 706.CE with 3 variables.
